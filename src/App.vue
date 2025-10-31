@@ -26,9 +26,6 @@
     :pads="pads"
     :permission-allowed="permissionAllowed"
     :midi-enabled="midiEnabled"
-    @start-pad="startPad"
-    @stop-pad="stopPad"
-  />
   />
 
   <EditDialog ref="editDialogRef" @save="saveEdit" @close="closeEdit" />
@@ -54,6 +51,8 @@
 
   <GlobalKeyDialog
     ref="globalKeyDialogRef"
+    :model-scale="globalScale"
+    :model-type="globalScaleType"
     @close="onCloseGlobalKey"
     @save="saveGlobalKey"
   />
@@ -86,6 +85,7 @@ const {
   selectedOutCh,
   permissionAllowed: permissionAllowedMidi,
   permissionPrompt: permissionPromptMidi,
+  midiWasConnected,
   connectMidi,
   disconnectMidi,
   updatePermissionStatus,
@@ -117,6 +117,38 @@ const isMidiDirty = computed(() => {
   return selectedOutputId.value !== id || Number(selectedOutCh.value) !== ch;
 });
 
+// Global scale state
+const globalScale = ref("C");
+const globalScaleType = ref("major");
+
+const GLOBAL_SCALE_KEY = "midi-test:global-scale";
+
+// Load global scale settings from localStorage
+function loadGlobalScaleSettings() {
+  try {
+    const raw = localStorage.getItem(GLOBAL_SCALE_KEY);
+    if (!raw) return;
+    const obj = JSON.parse(raw);
+    if (obj && typeof obj === "object") {
+      if (obj.scale) globalScale.value = obj.scale;
+      if (obj.type) globalScaleType.value = obj.type;
+    }
+  } catch {}
+}
+
+// Save global scale settings to localStorage
+function saveGlobalScaleSettings() {
+  try {
+    localStorage.setItem(
+      GLOBAL_SCALE_KEY,
+      JSON.stringify({
+        scale: globalScale.value,
+        type: globalScaleType.value,
+      })
+    );
+  } catch {}
+}
+
 function openMidiDialog() {
   clearVisualDisplay();
   midiModelOutputId.value =
@@ -137,13 +169,18 @@ function openGlobalKeyDialog() {
 function onCloseGlobalKey() {}
 
 function saveGlobalKey({ scale, type }) {
-  const changed = globalScale.value !== scale || globalScaleType.value !== type;
   globalScale.value = scale;
   globalScaleType.value = type;
-  if (changed) {
-    (pads.value || []).forEach((pad, idx) => {
-      if (pad?.mode === "scale") resetPad(idx);
-    });
+  saveGlobalScaleSettings();
+}
+
+function rescanMidi() {
+  try {
+    renderDevices();
+    const exists = outputs.value?.find((o) => o.id === midiModelOutputId.value);
+    if (!exists) midiModelOutputId.value = outputs.value?.[0]?.id || "";
+  } catch (err) {
+    // Error rescanning MIDI
   }
 }
 
@@ -152,17 +189,6 @@ function saveMidiDialog() {
   selectedOutCh.value = Number(midiModelOutCh.value) || 1;
   saveMidiSettings();
   closeMidiDialog();
-}
-
-function rescanMidi() {
-  try {
-    renderDevices();
-    const exists = outputs.value?.find((o) => o.id === midiModelOutputId.value);
-    if (!exists) midiModelOutputId.value = outputs.value?.[0]?.id || "";
-    logMsg("MIDI devices rescanned");
-  } catch (err) {
-    logMsg(`Error rescanning MIDI: ${err?.message || err}`);
-  }
 }
 
 watch(
@@ -204,42 +230,8 @@ async function handleRequestConnect() {
   await updatePermissionStatus();
 }
 
-function asPadLike(pad) {
-  if (!pad) return null;
-  if (pad.mode === "scale") {
-    return {
-      ...pad,
-      scale: globalScale.value,
-      scaleTypeScale: globalScaleType.value,
-    };
-  }
-  return pad;
-}
-
-function stopAllActive() {
-  Object.keys(activePads.value).forEach((idx) => {
-    const active = activePads.value[idx];
-    if (!active) return;
-    if (active.outputId && active.channel != null) {
-      const output = WebMidi.outputs.find((o) => o.id === active.outputId);
-      const ch = output?.channels?.[active.channel];
-      if (ch) {
-        for (const note of active.notes || []) ch.sendNoteOff(note);
-      }
-    }
-    delete activePads.value[idx];
-  });
-  activePads.value = {};
-  previewActive.value = null;
-  clearVisualDisplay();
-}
-
 function clearVisualDisplay() {
-  activeKeySet.value = new Set();
-  nowPlaying.value = "";
-  stickyNotes.value = [];
-  stickyLabel.value = "";
-  lastActiveIdx.value = null;
+  // Do nothing
 }
 
 const pads = ref(
@@ -253,6 +245,7 @@ onMounted(() => {
         typeof navigator.requestMIDIAccess === "function")
   );
   updatePermissionStatus();
+  loadGlobalScaleSettings();
 
   nextTick(() => {
     try {
@@ -282,8 +275,11 @@ watch(
   async (p) => {
     if (p === "granted" && midiSupported.value && !midiEnabled.value) {
       try {
-        await connectMidi();
-        applySavedMidiSettings();
+        // Auto-connect if MIDI was connected in the last session
+        if (midiWasConnected.value) {
+          await connectMidi();
+          applySavedMidiSettings();
+        }
       } catch {}
     }
   },
@@ -308,132 +304,5 @@ function saveEdit() {
 
 function closeEdit() {
   editDialogRef.value?.close?.();
-}
-
-function saveEdit() {
-  // Do nothing
-}
-
-async function connectMidiAndMaybeOpenDialog() {
-  clearVisualDisplay();
-  await connectMidi();
-  try {
-    if (!hasValidSavedMidiSettings()) openMidiDialog();
-  } catch {}
-}
-
-function startPad(idx, e) {
-  if (activePads.value[idx]) return;
-  const padOrig = pads.value[idx];
-  if (!padOrig || padOrig.mode === "unassigned" || padOrig.assigned === false)
-    return;
-  const info = buildPadInfo(padOrig, idx);
-  if (!info || !info.notes.length) return;
-  const sel = getSelectedChannel();
-  try {
-    e?.target?.setPointerCapture?.(e.pointerId);
-  } catch {}
-  if (sel) {
-    const channel = sel.output?.channels?.[sel.chNum];
-    if (channel) {
-      info.notes.forEach((note) => channel.sendNoteOn(note));
-    }
-  }
-  activePads.value[idx] = {
-    ...info,
-    outputId: sel ? sel.output.id : null,
-    channel: sel ? sel.chNum : null,
-  };
-  stickyNotes.value = info.displayNotes;
-  stickyLabel.value = info.label;
-  lastActiveIdx.value = idx;
-  refreshActiveKeys();
-  syncNowPlayingFromActivePads();
-  const midiInfo = sel ? ` on ${sel.output.name} ch${sel.chNum}` : " (no MIDI)";
-  const notesText = info.displayNotes.length
-    ? ` — ${info.displayNotes.join(" ")}`
-    : "";
-  logMsg(`Start ${idx + 1}: ${info.label}${midiInfo}${notesText}`);
-}
-
-function stopPad(idx, e) {
-  const active = activePads.value[idx];
-  if (!active) return;
-  try {
-    e?.target?.releasePointerCapture?.(e.pointerId);
-  } catch {}
-  if (active.outputId && active.channel != null) {
-    const output = WebMidi.outputs.find((o) => o.id === active.outputId);
-    const ch = output?.channels?.[active.channel];
-    if (ch) {
-      for (const note of active.notes || []) ch.sendNoteOff(note);
-    }
-  }
-  delete activePads.value[idx];
-  refreshActiveKeys();
-  syncNowPlayingFromActivePads();
-  logMsg(`Stop  ${idx + 1}: ${active.label}`);
-}
-
-function startPreview(e) {
-  if (previewActive.value) return;
-  // Accept voicingType from event payload
-  let voicingType = "close";
-  let eventObj = e;
-  if (e && typeof e === "object" && "voicingType" in e) {
-    voicingType = e.voicingType?.value || e.voicingType || "close";
-    eventObj = e.event || e;
-  }
-  // Always use voicingType from event payload for preview
-  const info = buildPadInfo(
-    { ...editModel.value, voicingType },
-    currentEditIndex.value
-  );
-  if (!info || !info.notes.length) return;
-  const sel = getSelectedChannel();
-  try {
-    eventObj?.target?.setPointerCapture?.(eventObj.pointerId);
-  } catch {}
-  if (sel) {
-    const channel = sel.output?.channels?.[sel.chNum];
-    if (channel) {
-      info.notes.forEach((note) => channel.sendNoteOn(note));
-    }
-  }
-  previewActive.value = {
-    ...info,
-    outputId: sel ? sel.output.id : null,
-    channel: sel ? sel.chNum : null,
-  };
-  setActiveKeys(info.cssKeys);
-  nowPlaying.value = formatNowPlaying(info.label, info.displayNotes);
-  logMsg("Preview start");
-}
-
-function stopPreview(e) {
-  const active = previewActive.value;
-  if (!active) return;
-  let eventObj = e;
-  if (e && typeof e === "object" && "event" in e) {
-    eventObj = e.event || e;
-  }
-  try {
-    eventObj?.target?.releasePointerCapture?.(eventObj.pointerId);
-  } catch {}
-  if (active.outputId && active.channel != null) {
-    const output = WebMidi.outputs.find((o) => o.id === active.outputId);
-    const ch = output?.channels?.[active.channel];
-    if (ch) {
-      for (const note of active.notes || []) ch.sendNoteOff(note);
-    }
-  }
-  previewActive.value = null;
-  refreshActiveKeys();
-  syncNowPlayingFromActivePads();
-  logMsg("Preview stop");
-}
-
-function onVisibilityChange() {
-  if (document.visibilityState !== "visible") stopAllActive();
 }
 </script>

@@ -60,7 +60,7 @@
 import { computed } from "vue";
 
 const props = defineProps({
-  activeKeySet: { type: Object, required: true }, // Set<string>
+  activeKeySet: { type: Object, required: false, default: () => new Set() }, // Set<string>
   nowPlayingHtml: { type: String, default: "" },
 });
 

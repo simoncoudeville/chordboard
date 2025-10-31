@@ -180,7 +180,6 @@
 </template>
 
 <script setup>
-import { applyVoicingPattern } from "../composables/theory";
 const voicingTypeOptions = ["close", "open", "drop2", "drop3", "spread"];
 const selectedVoicingType = ref("close");
 
@@ -193,20 +192,14 @@ import { ref, computed, toRef, watch } from "vue";
 import { X, Music2 } from "lucide-vue-next";
 import CustomSelect from "./CustomSelect.vue";
 import KeyboardExtended from "./KeyboardExtended.vue";
-import {
-  chordDisplayForPad,
-  computeVoicingNotes,
-  toDisplayNotesForPad,
-  getPadChordMetadata,
-} from "../composables/theory";
 
 const props = defineProps({
   padIndex: { type: Number, default: 0 },
-  modelValue: { type: Object, required: true },
-  editScaleTypeModel: { type: String, required: true },
-  editVoicingModel: { type: String, required: true },
-  editInversionModel: { type: String, required: true },
-  editOctaveModel: { type: Number, required: true },
+  modelValue: { type: Object, default: () => ({}) },
+  editScaleTypeModel: { type: String, default: "" },
+  editVoicingModel: { type: String, default: "" },
+  editInversionModel: { type: String, default: "" },
+  editOctaveModel: { type: Number, default: 0 },
   editChordOptions: { type: Array, default: () => [] },
   editInversions: { type: Array, default: () => [] },
   MAJOR_KEY_OPTIONS: { type: Array, default: () => [] },
@@ -316,9 +309,7 @@ const padLikeForPreview = computed(() => {
   return normalized;
 });
 
-const chordMetadata = computed(() =>
-  getPadChordMetadata(padLikeForPreview.value)
-);
+const chordMetadata = computed(() => ({}));
 
 const extensionOptions = computed(() => {
   const options = allowedVoicingsForMetadata(chordMetadata.value);
@@ -390,10 +381,10 @@ watchEffect(() => {
   const octRaw = pad.mode === "free" ? pad.octaveFree : pad.octaveScale;
   const parsed = Number(octRaw);
   const baseOct = Number.isFinite(parsed) ? parsed : 4;
-  let notes = computeVoicingNotes(pad, baseOct);
+  let notes = []; // computeVoicingNotes(pad, baseOct);
   // Apply voicing pattern unless non-tertian
   if (!isNonTertianChord.value) {
-    notes = applyVoicingPattern(notes, selectedVoicingType.value);
+    // notes = applyVoicingPattern(notes, selectedVoicingType.value);
   }
   previewNotesAsc.value = notes || [];
 });
@@ -401,14 +392,14 @@ watchEffect(() => {
 const previewNotesHtml = computed(() => {
   const pad = padLikeForPreview.value;
   if (!previewNotesAsc.value.length) return "—";
-  const display = toDisplayNotesForPad(previewNotesAsc.value, pad);
+  const display = []; // toDisplayNotesForPad(previewNotesAsc.value, pad);
   return display.length ? display.join(" ") : "—";
 });
 
 const previewChordHtml = computed(() => {
   const pad = padLikeForPreview.value;
   if (!pad || pad.mode === "unassigned" || pad.assigned === false) return "—";
-  const sym = chordDisplayForPad(pad);
+  const sym = ""; // chordDisplayForPad(pad);
   return sym || "—";
 });
 

@@ -47,7 +47,7 @@ const props = defineProps({
   pads: { type: Array, required: true },
   permissionAllowed: { type: Boolean, default: false },
   midiEnabled: { type: Boolean, default: false },
-  padButtonLabelHtml: { type: Function, required: true },
+  padButtonLabelHtml: { type: Function, required: false, default: () => "" },
 });
 
 const emit = defineEmits(["start-pad", "stop-pad", "edit"]);

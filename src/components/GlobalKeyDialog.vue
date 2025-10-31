@@ -25,7 +25,7 @@
           <span class="label-text">Root</span>
           <CustomSelect
             v-model="scaleLocal"
-            :options="MAJOR_KEY_OPTIONS"
+            :options="scaleRoots"
             option-value-key="value"
             option-label-key="label"
             wrapper-class="select-scale"
@@ -33,7 +33,12 @@
         </label>
         <label>
           <span class="label-text">Type</span>
-          <CustomSelect v-model="typeLocal" :options="['major', 'minor']" />
+          <CustomSelect
+            v-model="typeLocal"
+            :options="scaleTypes"
+            option-value-key="value"
+            option-label-key="label"
+          />
         </label>
         <p
           v-if="isDirty && scalePadCount > 0"
@@ -55,11 +60,12 @@
 <script setup>
 import { ref, computed } from "vue";
 import { X } from "lucide-vue-next";
+import { ScaleType, Note, Scale } from "@tonaljs/tonal";
 import CustomSelect from "./CustomSelect.vue";
 
 const props = defineProps({
-  modelScale: { type: String, required: true },
-  modelType: { type: String, required: true },
+  modelScale: { type: String, default: "" },
+  modelType: { type: String, default: "" },
   MAJOR_KEY_OPTIONS: { type: Array, default: () => [] },
   scalePadCount: { type: Number, default: 0 },
 });
@@ -69,6 +75,21 @@ const dlg = ref(null);
 // Local, confirm-on-save state
 const scaleLocal = ref(props.modelScale);
 const typeLocal = ref(props.modelType);
+
+// Scale options from tonal.js
+const scaleRoots = computed(() => {
+  return Scale.get("C chromatic").notes.map((name) => ({
+    value: name,
+    label: name,
+  }));
+});
+
+const scaleTypes = computed(() => {
+  return ScaleType.names().map((name) => ({
+    value: name,
+    label: name.replace(/-/g, " "),
+  }));
+});
 
 const isDirty = computed(
   () =>
@@ -94,5 +115,5 @@ function onSave() {
   close();
 }
 
-defineExpose({ open, close, dlg });
+defineExpose({ open });
 </script>

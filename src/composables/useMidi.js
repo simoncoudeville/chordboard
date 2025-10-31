@@ -14,6 +14,9 @@ export function useMidi() {
 
   const MIDI_SETTINGS_KEY = "midi-test:midi-settings";
 
+  // Track if MIDI was connected in the last session
+  const midiWasConnected = ref(false);
+
   function logMsg(msg) {
     // noop placeholder; caller can override by passing custom logger if needed
     console.debug(msg);
@@ -34,6 +37,7 @@ export function useMidi() {
         const exists = outputs.value.find((o) => o.id === obj.outputId);
         if (exists) selectedOutputId.value = obj.outputId;
         selectedOutCh.value = Number(obj.channel) || 1;
+        midiWasConnected.value = Boolean(obj.wasConnected);
       }
     } catch {}
   }
@@ -60,6 +64,7 @@ export function useMidi() {
         JSON.stringify({
           outputId: selectedOutputId.value,
           channel: selectedOutCh.value,
+          wasConnected: midiEnabled.value,
         })
       );
     } catch {}
@@ -95,6 +100,8 @@ export function useMidi() {
       });
       renderDevices();
       applySavedMidiSettings();
+      // Save that MIDI is now connected
+      saveMidiSettings();
     } catch (err) {
   status.value = "MIDI connection failed. See console.";
       logMsg(`Error enabling MIDI: ${err?.message || err}`);
@@ -113,6 +120,8 @@ export function useMidi() {
   status.value = "MIDI disconnected.";
       outputs.value = [];
       selectedOutputId.value = "";
+      // Save that MIDI is now disconnected
+      saveMidiSettings();
     }
   }
 
@@ -149,6 +158,7 @@ export function useMidi() {
     selectedOutCh,
     permissionAllowed,
     permissionPrompt,
+    midiWasConnected,
     // fns
     connectMidi,
     disconnectMidi,
