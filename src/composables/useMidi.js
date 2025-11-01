@@ -80,14 +80,14 @@ export function useMidi() {
 
   async function connectMidi({ onPermissionUpdate } = {}) {
     try {
-  status.value = "Requesting MIDI access…";
+      status.value = "Requesting MIDI access…";
       // Explicitly disable SysEx to avoid elevated permission prompts and
       // suppress WebMidi's advisory warning about unspecified MIDIOptions.
       // Note: Browsers may still show a generic MIDI permission prompt.
       await WebMidi.enable({ sysex: false, software: false });
-  midiEnabled.value = true;
-  status.value = "MIDI connected.";
-  logMsg("MIDI connected");
+      midiEnabled.value = true;
+      status.value = "MIDI connected.";
+      logMsg("MIDI connected");
       await updatePermissionStatus(onPermissionUpdate);
       WebMidi.addListener("connected", (e) => {
         logMsg(`Connected: ${e.port.type} – ${e.port.name}`);
@@ -103,7 +103,7 @@ export function useMidi() {
       // Save that MIDI is now connected
       saveMidiSettings();
     } catch (err) {
-  status.value = "MIDI connection failed. See console.";
+      status.value = "MIDI connection failed. See console.";
       logMsg(`Error enabling MIDI: ${err?.message || err}`);
     }
   }
@@ -117,7 +117,7 @@ export function useMidi() {
       logMsg(`Error disconnecting MIDI: ${err?.message || err}`);
     } finally {
       midiEnabled.value = false;
-  status.value = "MIDI disconnected.";
+      status.value = "MIDI disconnected.";
       outputs.value = [];
       selectedOutputId.value = "";
       // Save that MIDI is now disconnected

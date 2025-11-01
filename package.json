@@ -6,10 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest --run",
+    "test:ui": "vitest"
   },
   "devDependencies": {
-    "vite": "^6.1.0"
+    "vite": "^6.1.0",
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^25.0.1",
+    "vitest": "^2.1.4"
   },
   "dependencies": {
     "@tonaljs/tonal": "^4.10.0",

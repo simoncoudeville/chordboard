@@ -40,15 +40,15 @@
             option-label-key="label"
           />
         </label>
-        <p
-          v-if="isDirty && scalePadCount > 0"
-          class="grid-span-2 color-warning"
-        >
-          Changing the global scale will reset {{ scalePadCount }} pads
-          currently in Scale mode.
-        </p>
       </div>
-
+      <div
+        v-if="isDirty && scalePadCount > 0"
+        class="dialog-content color-warning"
+      >
+        Changing the global scale will reset
+        {{ scalePadCount }} {{ scalePadCount === 1 ? "pad" : "pads" }}
+        currently in Scale mode.
+      </div>
       <div class="dialog-buttons">
         <button type="button" @click="onClose">Cancel</button>
         <button type="button" @click="onSave" :disabled="!isDirty">Save</button>
@@ -60,13 +60,11 @@
 <script setup>
 import { ref, computed } from "vue";
 import { X } from "lucide-vue-next";
-import { ScaleType, Note, Scale } from "@tonaljs/tonal";
 import CustomSelect from "./CustomSelect.vue";
 
 const props = defineProps({
   modelScale: { type: String, default: "" },
   modelType: { type: String, default: "" },
-  MAJOR_KEY_OPTIONS: { type: Array, default: () => [] },
   scalePadCount: { type: Number, default: 0 },
 });
 const emit = defineEmits(["save", "close"]);
@@ -77,19 +75,37 @@ const scaleLocal = ref(props.modelScale);
 const typeLocal = ref(props.modelType);
 
 // Scale options from tonal.js
-const scaleRoots = computed(() => {
-  return Scale.get("C chromatic").notes.map((name) => ({
-    value: name,
-    label: name,
-  }));
-});
+const scaleRoots = computed(() => [
+  { value: "C", label: "C" },
+  { value: "C#", label: "C#" },
+  { value: "D", label: "D" },
+  { value: "Eb", label: "Eb" },
+  { value: "E", label: "E" },
+  { value: "F", label: "F" },
+  { value: "F#", label: "F#" },
+  { value: "G", label: "G" },
+  { value: "Ab", label: "Ab" },
+  { value: "A", label: "A" },
+  { value: "Bb", label: "Bb" },
+  { value: "B", label: "B" },
+]);
 
-const scaleTypes = computed(() => {
-  return ScaleType.names().map((name) => ({
+const usefulScaleTypes = [
+  "major",
+  "minor",
+  "dorian",
+  "mixolydian",
+  "lydian",
+  "phrygian",
+  "harmonic minor",
+];
+
+const scaleTypes = computed(() =>
+  usefulScaleTypes.map((name) => ({
     value: name,
     label: name.replace(/-/g, " "),
-  }));
-});
+  }))
+);
 
 const isDirty = computed(
   () =>
