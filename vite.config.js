@@ -1,8 +1,47 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["favicon.svg"],
+      devOptions: {
+        enabled: true,
+      },
+      manifest: {
+        name: "ChordPilot",
+        short_name: "ChordPilot",
+        description: "MIDI chord pad controller with scale-aware voicings.",
+        start_url: "/chordpilot/",
+        scope: "/chordpilot/",
+        display: "standalone",
+        orientation: "portrait",
+        background_color: "#0f0f13",
+        theme_color: "#0f0f13",
+        icons: [
+          {
+            src: "icons/icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "icons/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+          {
+            src: "icons/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable",
+          },
+        ],
+      },
+    }),
+  ],
   // Ensure correct asset paths when hosted at https://<user>.github.io/chordpilot/
   base: "/chordpilot/",
   server: {

@@ -1,13 +1,12 @@
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <style>
-    .a{fill:#1C1E1D;}
-    .b{fill:#CDFFED;}
-    @media (prefers-color-scheme: dark) {
-      .a{fill:none;}
-    }
-    </style>
-
-<rect class="a" width="32" height="32" rx="2"/>
-<path class="b" d="M7 2C7.55228 2 8 2.44772 8 3V15C8 15.5523 8.44772 16 9 16C9.55228 16 10 16.4477 10 17V29C10 29.5523 9.55228 30 9 30H3C2.44772 30 2 29.5523 2 29V3C2 2.44771 2.44772 2 3 2H7ZM17 2C17.5523 2 18 2.44772 18 3V15C18 15.5523 18.4477 16 19 16C19.5523 16 20 16.4477 20 17V29C20 29.5523 19.5523 30 19 30H13C12.4477 30 12 29.5523 12 29V17C12 16.4477 12.4477 16 13 16C13.5523 16 14 15.5523 14 15V3C14 2.44772 14.4477 2 15 2H17ZM30 29C30 29.5523 29.5523 30 29 30H23C22.4477 30 22 29.5523 22 29V17C22 16.4477 22.4477 16 23 16C23.5523 16 24 15.5523 24 15V3C24 2.44772 24.4477 2 25 2H29C29.5523 2 30 2.44772 30 3V29Z"/>
-
+<rect width="32" height="32" fill="#1A1A1A"/>
+<rect x="2" y="2" width="8" height="8" rx="1" fill="#4D4D4D"/>
+<rect x="2" y="12" width="8" height="8" rx="1" fill="#4D4D4D"/>
+<rect x="12" y="12" width="8" height="8" rx="1" fill="#F2F2F2"/>
+<rect x="22" y="12" width="8" height="8" rx="1" fill="#4D4D4D"/>
+<rect x="22" y="22" width="8" height="8" rx="1" fill="#4D4D4D"/>
+<rect x="12" y="22" width="8" height="8" rx="1" fill="#4D4D4D"/>
+<rect x="2" y="22" width="8" height="8" rx="1" fill="#4D4D4D"/>
+<rect x="12" y="2" width="8" height="8" rx="1" fill="#4D4D4D"/>
+<rect x="22" y="2" width="8" height="8" rx="1" fill="#4D4D4D"/>
 </svg>

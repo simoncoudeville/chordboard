@@ -506,7 +506,7 @@ dialog:open {
 
 .chord-preview {
   display: grid;
-  gap: var(--space-1);
+  gap: var(--space-1-5);
 }
 
 .sr-only {
