@@ -835,15 +835,12 @@ function onPreviewStop() {
 
 // pcToKeyToken imported from ./utils/music
 
-// Union of all currently playing note names (with octaves) from pads and preview
+// Currently playing note names (with octaves) from pads only.
+// Do NOT include preview notes in the top keyboard.
 const activeNoteNames = computed(() => {
-  const fromPads = Object.values(activePadNotes).flatMap((arr) =>
+  return Object.values(activePadNotes).flatMap((arr) =>
     Array.isArray(arr) ? arr : []
   );
-  const fromPreview = Array.isArray(activePreviewNotes.value)
-    ? activePreviewNotes.value
-    : [];
-  return [...fromPads, ...fromPreview];
 });
 
 // Active keys as a Set of lowercase pitch-class tokens for Keyboard.vue

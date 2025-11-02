@@ -38,7 +38,7 @@
   --color-layer-3: var(--color-gray-400);
   --color-text: var(--color-gray-500);
   --color-text-meta: var(--color-gray-400);
-  --color-border: var(--color-gray-200);
+  --color-border: var(--color-gray-300);
 }
 
 * {
@@ -497,6 +497,13 @@ dialog:open {
   grid-column: span 2;
 }
 
+.chord-preview-output {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  /* justify-content: space-between; */
+}
+
 .chord-preview {
   display: grid;
   gap: var(--space-1);
@@ -518,13 +525,13 @@ dialog:open {
   gap: 1px;
   /* gap: var(--space-1); */
   /* margin-left: calc(var(--space-1) * -1); */
-  background-color: var(--color-layer-1);
+  background-color: var(--color-layer-2);
   border-radius: var(--radius);
   padding: 1px;
 }
 
 .toggle-button {
-  color: var(--color-text-meta);
+  color: var(--color-layer-0);
   font-weight: 500;
   padding: var(--space-1) var(--space-2);
   flex-basis: 50%;
@@ -541,7 +548,12 @@ dialog:open {
 .global-scale-info {
   display: flex;
   align-items: center;
+  /* justify-content: center; */
   gap: var(--space-0-5);
+  color: var(--color-text-meta);
+  /* padding: var(--space-1);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border); */
 }
 
 .custom-select {

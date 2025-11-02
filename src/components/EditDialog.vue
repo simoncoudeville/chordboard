@@ -43,7 +43,7 @@
       </div>
       <template v-if="model.mode === 'scale'">
         <div class="dialog-content">
-          <p class="global-scale-info color-scale">
+          <p class="global-scale-info">
             <Music2 aria-hidden="true" :size="14" stroke-width="2" />
 
             Global scale: <span>{{ globalScale }}</span>
@@ -135,12 +135,13 @@
           :start-octave="2"
           :octaves="7"
         />
-
-        <div class="chord-preview-symbol">
-          Chord: <span>{{ previewChordHtml }}</span>
-        </div>
-        <div class="chord-preview-notes">
-          Notes: <span>{{ previewNotesHtml }}</span>
+        <div class="chord-preview-output">
+          <div class="chord-preview-symbol">
+            <span>{{ previewChordHtml }}</span>
+          </div>
+          <div class="chord-preview-notes">
+            <span>{{ previewNotesHtml }}</span>
+          </div>
         </div>
         <button
           type="button"
