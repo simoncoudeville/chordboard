@@ -70,4 +70,6 @@ function isKeyActive(name) {
     props.activeKeySet && props.activeKeySet.has(String(name).toLowerCase())
   );
 }
+
+// Debug readout removed
 </script>

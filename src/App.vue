@@ -1,6 +1,9 @@
 <template>
   <div class="top">
-    <Keyboard />
+    <Keyboard
+      :active-key-set="activeKeySet"
+      :now-playing-html="nowPlayingHtml"
+    />
     <div class="midi-status-container">
       <button
         class="button md"
@@ -94,6 +97,7 @@ import MidiDialog from "./components/MidiDialog.vue";
 import GlobalKeyDialog from "./components/GlobalKeyDialog.vue";
 import { useMidi } from "./composables/useMidi";
 import { Scale, Chord, Note } from "@tonaljs/tonal";
+import { pcToKeyToken } from "./utils/music";
 
 const {
   midiEnabled,
@@ -640,7 +644,8 @@ function padButtonLabelHtml(pad) {
   return s || "UNASSIGNED";
 }
 
-const activePadNotes = ref({});
+import { reactive } from "vue";
+const activePadNotes = reactive({});
 
 function onStartPad(idx) {
   try {
@@ -650,7 +655,7 @@ function onStartPad(idx) {
     const sel = getSelectedChannel();
     const ch = sel?.ch;
     if (!ch) return;
-    activePadNotes.value[idx] = notes.slice();
+    activePadNotes[idx] = notes.slice();
     try {
       ch.playNote(notes);
     } catch {
@@ -665,7 +670,7 @@ function onStartPad(idx) {
 
 function onStopPad(idx) {
   try {
-    const notes = activePadNotes.value[idx] || [];
+    const notes = activePadNotes[idx] || [];
     if (!notes.length) return;
     const sel = getSelectedChannel();
     const ch = sel?.ch;
@@ -681,7 +686,7 @@ function onStopPad(idx) {
     }
   } catch {
   } finally {
-    activePadNotes.value[idx] = [];
+    activePadNotes[idx] = [];
   }
 }
 // Preview MIDI handling
@@ -727,4 +732,37 @@ function onPreviewStop() {
     activePreviewNotes.value = [];
   }
 }
+
+// pcToKeyToken imported from ./utils/music
+
+// Union of all currently playing note names (with octaves) from pads and preview
+const activeNoteNames = computed(() => {
+  const fromPads = Object.values(activePadNotes).flatMap((arr) =>
+    Array.isArray(arr) ? arr : []
+  );
+  const fromPreview = Array.isArray(activePreviewNotes.value)
+    ? activePreviewNotes.value
+    : [];
+  return [...fromPads, ...fromPreview];
+});
+
+// Active keys as a Set of lowercase pitch-class tokens for Keyboard.vue
+const activeKeySet = computed(() => {
+  const set = new Set();
+  for (const n of activeNoteNames.value) {
+    const info = Note.get(n);
+    const token = pcToKeyToken(info?.pc);
+    if (token) set.add(token);
+  }
+  return set;
+});
+
+// Human-friendly now playing line
+const nowPlayingHtml = computed(() => {
+  const notes = activeNoteNames.value.slice();
+  if (!notes.length) return "";
+  // Sort ascending by MIDI for readability
+  notes.sort((a, b) => (Note.midi(a) ?? 0) - (Note.midi(b) ?? 0));
+  return notes.join(" ");
+});
 </script>

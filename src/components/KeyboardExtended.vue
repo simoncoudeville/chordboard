@@ -32,6 +32,7 @@
 <script setup>
 import { computed } from "vue";
 import { Note } from "@tonaljs/tonal";
+import { pcToKeyToken, normalizePcOct } from "../utils/music";
 
 const props = defineProps({
   highlightedNotes: { type: Array, default: () => [] },
@@ -47,27 +48,25 @@ const highlightedSet = computed(() => {
   const s = new Set();
   for (const n of props.highlightedNotes || []) {
     if (!n) continue;
-    // Use Tonal to get pitch class and octave
+    // Use Tonal to get pitch class and octave and normalize via pcToKeyToken
     try {
-      const pc = Note.pitchClass(String(n)); // e.g. 'C#' or 'Db'
+      const pc = Note.pitchClass(String(n));
       const oct = Note.octave(String(n));
       if (!pc || oct == null) continue;
-      // Convert sharps to flats for our class names
-      const pcUpper = pc.toUpperCase();
-      const mapped = pcUpper.replace("#", "b");
-      // But replace C#->Db etc for correct names
-      const sharpToFlat = {
-        "C#": "Db",
-        "D#": "Eb",
-        "F#": "Gb",
-        "G#": "Ab",
-        "A#": "Bb",
-      };
-      const normalized = sharpToFlat[pcUpper] || pcUpper;
-      s.add(normalized.toLowerCase() + String(oct));
+      const [token, correctedOct] = normalizePcOct(pc, oct);
+      if (!token || correctedOct == null) continue;
+      s.add(token + String(correctedOct));
     } catch (e) {
-      // fallback: raw string lower
-      s.add(String(n).toLowerCase());
+      // Fallback: attempt Note.get
+      try {
+        const info = Note.get(String(n));
+        const [token, correctedOct] = normalizePcOct(info?.pc, info?.oct);
+        if (token && typeof correctedOct === "number") {
+          s.add(token + String(correctedOct));
+        }
+      } catch {
+        // final fallback: ignore
+      }
     }
   }
   return s;

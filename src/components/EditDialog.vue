@@ -77,7 +77,7 @@
             <span class="label-text">Root</span>
             <CustomSelect
               v-model="stateFree.root"
-              :options="MAJOR_KEY_OPTIONS"
+              :options="rootOptions"
               option-value-key="value"
               option-label-key="label"
               wrapper-class="select-scale"
@@ -299,20 +299,28 @@ const editChordOptions = computed(() =>
     };
   })
 );
-const MAJOR_KEY_OPTIONS = [
-  { value: "C", label: "C" },
-  { value: "C#", label: "C#" },
-  { value: "D", label: "D" },
-  { value: "Eb", label: "Eb" },
-  { value: "E", label: "E" },
-  { value: "F", label: "F" },
-  { value: "F#", label: "F#" },
-  { value: "G", label: "G" },
-  { value: "Ab", label: "Ab" },
-  { value: "A", label: "A" },
-  { value: "Bb", label: "Bb" },
-  { value: "B", label: "B" },
+// Root options for Free mode, generated via Tonal. We prefer flats to match UI/keyboard.
+const ROOT_PCS_SHARP = [
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
 ];
+const rootOptions = computed(() => {
+  // Prefer flats everywhere for consistency with keyboard tokens
+  const pcs = ROOT_PCS_SHARP.map((pc) =>
+    pc.includes("#") ? Note.enharmonic(pc) : pc
+  );
+  return pcs.map((name) => ({ value: String(name), label: String(name) }));
+});
 const extensionOptions = ["triad", "7", "maj7", "9", "add9", "sus2", "sus4"];
 // Inversions to apply on the base ascending stack
 const editInversions = ["root", "1st", "2nd", "3rd", "4th"];
@@ -544,7 +552,33 @@ function onClose() {
   close();
 }
 
-defineExpose({ open, close, dlg });
+function resetToDefaults() {
+  // Reset mode and both mode states to defaults
+  model.value.mode = "scale";
+  stateScale.degree = "1";
+  stateScale.octave = 4;
+  stateScale.extension = "triad";
+  stateScale.inversion = "root";
+  stateScale.voicing = "close";
+
+  stateFree.root = "C";
+  stateFree.type = "major";
+  stateFree.octave = 4;
+  stateFree.extension = "triad";
+  stateFree.inversion = "root";
+  stateFree.voicing = "close";
+}
+
+// When the global scale changes, reset the edit selections to defaults
+watch(
+  () => [props.globalScale, props.globalScaleType],
+  () => {
+    resetToDefaults();
+  },
+  { immediate: false }
+);
+
+defineExpose({ open, close, dlg, resetToDefaults });
 
 // --- Saving support ---
 function buildPadSnapshot() {
