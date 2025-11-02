@@ -12,7 +12,7 @@
           <X
             class="dialog-close-icon"
             aria-hidden="true"
-            :size="14"
+            :size="21"
             stroke-width="2"
           />
 
@@ -43,7 +43,7 @@
       </div>
       <template v-if="model.mode === 'scale'">
         <div class="dialog-content">
-          <p class="global-scale-info color-scale">
+          <p class="global-scale-info">
             <Music2 aria-hidden="true" :size="14" stroke-width="2" />
 
             Global scale: <span>{{ globalScale }}</span>
@@ -52,31 +52,14 @@
         </div>
       </template>
       <div class="dialog-content edit-grid">
-        <template v-if="model.mode !== 'scale'">
-          <label>
-            <span class="label-text">Root</span>
-            <CustomSelect
-              v-model="model.freeRoot"
-              :options="MAJOR_KEY_OPTIONS"
-              option-value-key="value"
-              option-label-key="label"
-              wrapper-class="select-scale"
-            />
-          </label>
-        </template>
-        <template v-if="model.mode !== 'scale'">
-          <label>
-            <span class="label-text">Type</span>
-            <CustomSelect
-              v-model="scaleTypeProxy"
-              :options="['major', 'minor']"
-            />
-          </label>
-        </template>
+        <!-- Primary chord selector: degree (scale mode) or root/type (free mode) -->
         <template v-if="model.mode === 'scale'">
           <label class="flex-grow-1">
             <span class="label-text">Chord</span>
-            <CustomSelect v-model="model.degree" wrapper-class="select-chord">
+            <CustomSelect
+              v-model="stateScale.degree"
+              wrapper-class="select-chord"
+            >
               <template #options>
                 <option
                   v-for="ch in editChordOptions"
@@ -89,20 +72,60 @@
             </CustomSelect>
           </label>
         </template>
-        <label class="flex-grow-1">
-          <span class="label-text">Extension</span>
-          <CustomSelect v-model="voicingProxy" :options="extensionOptions" />
-        </label>
-        <label class="flex-grow-1">
-          <span class="label-text">Inversion</span>
-          <CustomSelect v-model="inversionProxy" :options="editInversions" />
-        </label>
+        <template v-else>
+          <label>
+            <span class="label-text">Root</span>
+            <CustomSelect
+              v-model="stateFree.root"
+              :options="rootOptions"
+              option-value-key="value"
+              option-label-key="label"
+              wrapper-class="select-scale"
+            />
+          </label>
+          <label>
+            <span class="label-text">Type</span>
+            <CustomSelect
+              v-model="stateFree.type"
+              :options="['major', 'minor']"
+            />
+          </label>
+        </template>
+
+        <!-- Root octave always active -->
         <label class="flex-grow-1">
           <span class="label-text">Root octave</span>
           <CustomSelect
-            v-model="octaveProxy"
+            v-model="currentOctave"
             :options="[2, 3, 4, 5, 6]"
             :cast-number="true"
+          />
+        </label>
+
+        <!-- Chord type / extension -->
+        <label class="flex-grow-1">
+          <span class="label-text">Extension</span>
+          <CustomSelect
+            v-model="currentExtension"
+            :options="extensionOptions"
+          />
+        </label>
+
+        <!-- Inversion then Voicing pattern -->
+        <label class="flex-grow-1">
+          <span class="label-text">Inversion</span>
+          <CustomSelect
+            v-model="currentInversion"
+            :options="editInversions"
+            :disabled="!currentExtension || isNonTertianChord"
+          />
+        </label>
+        <label class="flex-grow-1">
+          <span class="label-text">Voicing</span>
+          <CustomSelect
+            v-model="currentVoicing"
+            :options="voicingTypeOptions"
+            :disabled="isNonTertianChord || !currentExtension"
           />
         </label>
       </div>
@@ -112,21 +135,27 @@
           :start-octave="2"
           :octaves="7"
         />
-
-        <div class="chord-preview-symbol">
-          Chord: <span>{{ previewChordHtml }}</span>
-        </div>
-        <div class="chord-preview-notes">
-          Notes: <span>{{ previewNotesHtml }}</span>
+        <div class="chord-preview-output">
+          <div class="chord-preview-symbol">
+            <span>{{ previewChordHtml }}</span>
+          </div>
+          <div class="chord-preview-notes">
+            <span>{{ previewNotesHtml }}</span>
+          </div>
         </div>
         <button
           type="button"
           class="button large preview"
-          :disabled="!permissionAllowed || !midiEnabled || !hasChordForPreview"
-          @pointerdown.prevent.stop="$emit('preview-start', $event)"
-          @pointerup.prevent.stop="$emit('preview-stop', $event)"
-          @pointerleave.prevent.stop="$emit('preview-stop', $event)"
-          @pointercancel.prevent.stop="$emit('preview-stop', $event)"
+          :disabled="!hasChordForPreview"
+          @pointerdown.prevent.stop="
+            $emit('preview-start', {
+              event: $event,
+              notes: previewNotesAsc,
+            })
+          "
+          @pointerup.prevent.stop="$emit('preview-stop', { event: $event })"
+          @pointerleave.prevent.stop="$emit('preview-stop', { event: $event })"
+          @pointercancel.prevent.stop="$emit('preview-stop', { event: $event })"
           @contextmenu.prevent
         >
           Preview
@@ -134,7 +163,11 @@
       </div>
       <div class="dialog-buttons">
         <button type="button" @click="onClose">Cancel</button>
-        <button type="button" @click="$emit('save')" :disabled="!isEditDirty">
+        <button
+          type="button"
+          @click="$emit('save', buildPadSnapshot())"
+          :disabled="!isEditDirty"
+        >
           Save
         </button>
       </div>
@@ -143,175 +176,461 @@
 </template>
 
 <script setup>
-import { ref, computed, toRef, watch } from "vue";
+import { ref, computed, reactive, watch } from "vue";
 import { X, Music2 } from "lucide-vue-next";
 import CustomSelect from "./CustomSelect.vue";
 import KeyboardExtended from "./KeyboardExtended.vue";
-import {
-  chordDisplayForPad,
-  computeVoicingNotes,
-  toDisplayNotesForPad,
-  getPadChordMetadata,
-} from "../composables/theory";
+import { Scale, Chord, Note } from "@tonaljs/tonal";
 
+// Keep padIndex so the title continues to work; expose open/close for parent
 const props = defineProps({
   padIndex: { type: Number, default: 0 },
-  modelValue: { type: Object, required: true },
-  editScaleTypeModel: { type: String, required: true },
-  editVoicingModel: { type: String, required: true },
-  editInversionModel: { type: String, required: true },
-  editOctaveModel: { type: Number, required: true },
-  editChordOptions: { type: Array, default: () => [] },
-  editInversions: { type: Array, default: () => [] },
-  MAJOR_KEY_OPTIONS: { type: Array, default: () => [] },
+  isEditDirty: { type: Boolean, default: false },
+  // Receive current global scale from parent (App.vue)
   globalScale: { type: String, default: "" },
   globalScaleType: { type: String, default: "" },
   permissionAllowed: { type: Boolean, default: false },
   midiEnabled: { type: Boolean, default: false },
-  isEditDirty: { type: Boolean, default: false },
+  // New: incoming saved state for this pad (or null)
+  padState: { type: Object, default: null },
 });
 
-const emit = defineEmits([
-  "update:modelValue",
-  "update:editScaleTypeModel",
-  "update:editVoicingModel",
-  "update:editInversionModel",
-  "update:editOctaveModel",
-  "save",
-  "close",
-  "preview-start",
-  "preview-stop",
-]);
-
-const SUPPORTED_VOICINGS = [
-  "triad",
-  "add2",
-  "add9",
-  "7",
-  "9",
-  "11",
-  "13",
-  "sus2",
-  "sus4",
-];
-
-const VOICINGS_BY_KIND = {
-  major: ["triad", "add2", "add9", "6", "7", "9", "11", "13", "sus2", "sus4"],
-  minor: ["triad", "add2", "add9", "6", "7", "9", "11", "13", "sus2", "sus4"],
-  dominant: ["triad", "7", "9", "11", "13", "sus2", "sus4"],
-  diminished: ["triad", "7"],
-  "half-diminished": ["triad", "7"],
-  augmented: ["triad", "add9", "7"],
-};
-
-function allowedVoicingsForMetadata(meta) {
-  const kind = meta?.kind || "major";
-  const raw = VOICINGS_BY_KIND[kind] || VOICINGS_BY_KIND.major;
-  return raw.filter((v) => SUPPORTED_VOICINGS.includes(v));
-}
+// Declare emits used in template to avoid warnings
+const emit = defineEmits(["save", "close", "preview-start", "preview-stop"]);
 
 const dlg = ref(null);
 
-const model = toRef(props, "modelValue");
-const scaleTypeProxy = computed({
-  get: () => props.editScaleTypeModel,
-  set: (v) => emit("update:editScaleTypeModel", v),
+// Mode flag only; all other selections are kept separate per mode
+const model = ref({ mode: "scale" });
+
+// Independent state per mode
+const stateScale = reactive({
+  degree: "1",
+  octave: 4,
+  extension: "triad",
+  inversion: "root",
+  voicing: "close",
 });
-const voicingProxy = computed({
-  get: () => props.editVoicingModel,
-  set: (v) => emit("update:editVoicingModel", v),
+
+const stateFree = reactive({
+  root: "C",
+  type: "major", // or "minor"
+  octave: 4,
+  extension: "triad",
+  inversion: "root",
+  voicing: "close",
 });
-const inversionProxy = computed({
-  get: () => props.editInversionModel,
-  set: (v) => emit("update:editInversionModel", v),
+
+// Mode-bridged computed bindings for shared controls
+const currentOctave = computed({
+  get: () =>
+    model.value.mode === "scale" ? stateScale.octave : stateFree.octave,
+  set: (v) => {
+    if (model.value.mode === "scale") stateScale.octave = v;
+    else stateFree.octave = v;
+  },
 });
-const octaveProxy = computed({
-  get: () => props.editOctaveModel,
-  set: (v) => emit("update:editOctaveModel", v),
+const currentExtension = computed({
+  get: () =>
+    model.value.mode === "scale" ? stateScale.extension : stateFree.extension,
+  set: (v) => {
+    if (model.value.mode === "scale") stateScale.extension = v;
+    else stateFree.extension = v;
+  },
 });
+const currentInversion = computed({
+  get: () =>
+    model.value.mode === "scale" ? stateScale.inversion : stateFree.inversion,
+  set: (v) => {
+    if (model.value.mode === "scale") stateScale.inversion = v;
+    else stateFree.inversion = v;
+  },
+});
+const currentVoicing = computed({
+  get: () =>
+    model.value.mode === "scale" ? stateScale.voicing : stateFree.voicing,
+  set: (v) => {
+    if (model.value.mode === "scale") stateScale.voicing = v;
+    else stateFree.voicing = v;
+  },
+});
+// Notes for the current global scale (pitch classes, no octaves)
+const scaleNotes = computed(() => {
+  const root = props.globalScale || "C";
+  const type = props.globalScaleType || "major";
+  const { notes } = Scale.get(`${root} ${type}`);
+  return Array.isArray(notes) ? notes : [];
+});
+
+// Helper to detect simple triad quality for a degree: "", "m", "dim", "aug"
+function semitoneDistance(pcFrom, pcTo) {
+  const base = Note.midi(`${pcFrom}4`) ?? 60;
+  let target = Note.midi(`${pcTo}4`) ?? base;
+  while (target < base) target += 12;
+  return (target - base) % 12;
+}
+function qualityFromTriad(triad, rootPc) {
+  const [r, t, f] = triad;
+  if (!r || !t || !f) return "";
+  const third = semitoneDistance(rootPc, t);
+  const fifth = semitoneDistance(rootPc, f);
+  if (third === 3 && fifth === 6) return "dim";
+  if (third === 4 && fifth === 8) return "aug";
+  if (third === 3 && fifth === 7) return "m";
+  if (third === 4 && fifth === 7) return ""; // major
+  return "";
+}
+
+function qualityForDegree(index) {
+  const s = scaleNotes.value;
+  if (!Array.isArray(s) || s.length < 3) return "";
+  const i = index % s.length;
+  const triad = [s[i], s[(i + 2) % s.length], s[(i + 4) % s.length]];
+  return qualityFromTriad(triad, s[i]);
+}
+
+// Populate degree selector with chord symbols: C, Dm, Em, F, G, Am, Bdim, etc.
+const editChordOptions = computed(() =>
+  scaleNotes.value.map((n, i) => {
+    const q = qualityForDegree(i);
+    const suffix = q === "" ? "" : q === "m" ? "m" : q; // "m", "dim", "aug"
+    return {
+      degree: String(i + 1),
+      display: `${n}${suffix}`,
+    };
+  })
+);
+// Root options for Free mode, generated via Tonal.
+// Display both sharp and flat names for black keys.
+const ROOT_PCS_SHARP = [
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
+];
+const rootOptions = computed(() => {
+  return ROOT_PCS_SHARP.map((pc) => {
+    if (pc.includes("#")) {
+      const flat = Note.enharmonic(pc);
+      // Display both: "C#/Db"
+      return { value: flat, label: `${pc}/${flat}` };
+    }
+    return { value: pc, label: pc };
+  });
+});
+const extensionOptions = ["triad", "7", "maj7", "9", "add9", "sus2", "sus4"];
+// Inversions to apply on the base ascending stack
+const editInversions = ["root", "1st", "2nd", "3rd", "4th"];
+const voicingTypeOptions = ["close", "open", "drop2", "drop3", "spread"];
+const isNonTertianChord = computed(() => {
+  const ext = currentExtension.value;
+  return ext === "sus2" || ext === "sus4";
+});
+
+// Derive base triad quality for the selected scale degree ("", "m", "dim", "aug")
+const baseQualityFromScale = computed(() => {
+  if (model.value.mode !== "scale") return "";
+  const s = scaleNotes.value;
+  if (!Array.isArray(s) || s.length < 3) return "";
+  const deg = Math.max(1, parseInt(stateScale.degree, 10) || 1);
+  const i = (deg - 1) % s.length;
+  // Stack diatonic thirds within the scale
+  const triad = [s[i], s[(i + 2) % s.length], s[(i + 4) % s.length]];
+  return qualityFromTriad(triad, s[i]);
+});
+
+// Compute chord root from degree (scale mode) or free root
+const chordRootPc = computed(() => {
+  if (model.value.mode === "scale") {
+    const idx = Math.max(0, (parseInt(stateScale.degree, 10) || 1) - 1);
+    return scaleNotes.value[idx] || "C";
+  }
+  return stateFree.root || "C";
+});
+
+function buildChordSymbol(rootPc, isMinor, ext) {
+  const suffixMap = {
+    triad: "",
+    7: "7",
+    maj7: "maj7",
+    9: "9",
+    add9: "add9",
+    sus2: "sus2",
+    sus4: "sus4",
+  };
+  const suffix = suffixMap[ext] ?? "";
+  if (!isMinor) return `${rootPc}${suffix}`;
+  if (ext === "7") return `${rootPc}m7`;
+  if (ext === "9") return `${rootPc}m9`;
+  if (ext === "maj7") return `${rootPc}mMaj7`;
+  if (ext === "add9") return `${rootPc}madd9`;
+  if (ext === "sus2" || ext === "sus4") return `${rootPc}${suffix}`;
+  return `${rootPc}m${suffix}`;
+}
+
+// Build symbol from explicit quality for scale mode
+function buildChordSymbolFromQuality(rootPc, quality, ext) {
+  // Suspensions ignore 3rd quality
+  if (ext === "sus2" || ext === "sus4") return `${rootPc}${ext}`;
+  if (ext === "triad") {
+    if (quality === "m") return `${rootPc}m`;
+    if (quality === "dim") return `${rootPc}dim`;
+    if (quality === "aug") return `${rootPc}aug`;
+    return `${rootPc}`;
+  }
+  if (ext === "7") {
+    if (quality === "m") return `${rootPc}m7`;
+    if (quality === "dim") return `${rootPc}m7b5`;
+    if (quality === "aug") return `${rootPc}7#5`;
+    return `${rootPc}7`;
+  }
+  if (ext === "maj7") {
+    if (quality === "m") return `${rootPc}mMaj7`;
+    if (quality === "aug") return `${rootPc}maj7#5`;
+    return `${rootPc}maj7`;
+  }
+  if (ext === "9") {
+    if (quality === "m") return `${rootPc}m9`;
+    return `${rootPc}9`;
+  }
+  if (ext === "add9") {
+    if (quality === "m") return `${rootPc}madd9`;
+    if (quality === "dim") return `${rootPc}dim`;
+    if (quality === "aug") return `${rootPc}aug`;
+    return `${rootPc}add9`;
+  }
+  return `${rootPc}`;
+}
+
+function pcsToAscending(pcs, baseOct) {
+  const out = [];
+  let lastMidi = -Infinity;
+  let oct = Number.isFinite(baseOct) ? baseOct : 4;
+  for (const pc of pcs) {
+    let n = `${pc}${oct}`;
+    let m = Note.midi(n) ?? -Infinity;
+    if (m <= lastMidi) {
+      oct += 1;
+      n = `${pc}${oct}`;
+      m = Note.midi(n) ?? m;
+    }
+    out.push(n);
+    lastMidi = m;
+  }
+  return out;
+}
+
+// --- Inversion & Voicing helpers ---
+function sortByMidi(notes) {
+  return [...notes].sort((a, b) => (Note.midi(a) ?? 0) - (Note.midi(b) ?? 0));
+}
+function raiseOct(note, delta = 1) {
+  const info = Note.get(note);
+  const pc = info?.pc || note.replace(/[0-9]/g, "");
+  const baseOct =
+    typeof info?.oct === "number"
+      ? info.oct
+      : Number.parseInt(note.replace(/^[^0-9]+/, ""), 10) || 4;
+  return `${pc}${baseOct + delta}`;
+}
+function lowerOct(note, delta = 1) {
+  return raiseOct(note, -delta);
+}
+function insertAscending(arr, note) {
+  const m = Note.midi(note) ?? 0;
+  const out = [];
+  let inserted = false;
+  for (const n of arr) {
+    const mi = Note.midi(n) ?? 0;
+    if (!inserted && m <= mi) {
+      out.push(note);
+      inserted = true;
+    }
+    out.push(n);
+  }
+  if (!inserted) out.push(note);
+  return out;
+}
+
+// Raise the lowest note per inversion step and keep stack ascending
+function applyInversion(notes, inversionLabel) {
+  const order = ["root", "1st", "2nd", "3rd", "4th"];
+  const steps = Math.max(0, order.indexOf(String(inversionLabel)));
+  let res = sortByMidi(notes);
+  for (let i = 0; i < steps; i++) {
+    if (!res.length) break;
+    const lowest = res.shift();
+    const raised = raiseOct(lowest, 1);
+    res = insertAscending(res, raised);
+  }
+  return sortByMidi(res);
+}
+
+// Apply voicing pattern after inversion
+function applyVoicing(notes, pattern) {
+  const n = notes.length;
+  if (n <= 1 || !pattern || pattern === "close") return sortByMidi(notes);
+  let out = [...notes];
+  switch (pattern) {
+    case "open": {
+      const evens = out.filter((_, i) => i % 2 === 0);
+      const oddsRaised = out
+        .filter((_, i) => i % 2 === 1)
+        .map((x) => raiseOct(x, 1));
+      out = [...evens, ...oddsRaised];
+      break;
+    }
+    case "drop2": {
+      if (n >= 2) {
+        const idx = n - 2; // second highest
+        out[idx] = lowerOct(out[idx], 1);
+      }
+      break;
+    }
+    case "drop3": {
+      if (n >= 3) {
+        const idx = n - 3; // third highest
+        out[idx] = lowerOct(out[idx], 1);
+      }
+      break;
+    }
+    case "spread": {
+      const mid = Math.floor(n / 2);
+      out = out.map((x, i) => (i >= mid ? raiseOct(x, 1) : x));
+      break;
+    }
+    default:
+      break;
+  }
+  return sortByMidi(out);
+}
+
+const previewChordSymbol = computed(() => {
+  const root = chordRootPc.value;
+  const ext = currentExtension.value || "triad";
+  if (model.value.mode === "scale") {
+    const q = baseQualityFromScale.value; // "", "m", "dim", "aug"
+    return buildChordSymbolFromQuality(root, q, ext);
+  }
+  const isMinor = stateFree.type === "minor";
+  return buildChordSymbol(root, isMinor, ext);
+});
+
+const previewNotesAsc = computed(() => {
+  const pcs = Chord.get(previewChordSymbol.value).notes;
+  if (!pcs || pcs.length === 0)
+    return [`${chordRootPc.value}${currentOctave.value}`];
+  // Base ascending stack from selected octave
+  const base = pcsToAscending(pcs, currentOctave.value);
+  // Apply inversion (rotate lowest up) then voicing
+  const afterInv = applyInversion(base, currentInversion.value || "root");
+  const afterVoicing = applyVoicing(afterInv, currentVoicing.value || "close");
+  // Always return ascending notes by pitch
+  return sortByMidi(afterVoicing);
+});
+
+const hasChordForPreview = computed(
+  () => (previewNotesAsc.value?.length ?? 0) > 0
+);
+const previewChordHtml = computed(() => previewChordSymbol.value);
+const previewNotesHtml = computed(() =>
+  (previewNotesAsc.value || []).join(" ")
+);
 
 function open() {
-  dlg.value?.showModal();
+  dlg.value?.showModal?.();
 }
 function close() {
-  dlg.value?.close();
+  dlg.value?.close?.();
 }
-
 function onClose() {
   emit("preview-stop");
   emit("close");
+  close();
 }
 
-defineExpose({ open, close, dlg });
+function resetToDefaults() {
+  // Reset mode and both mode states to defaults
+  model.value.mode = "scale";
+  stateScale.degree = "1";
+  stateScale.octave = 4;
+  stateScale.extension = "triad";
+  stateScale.inversion = "root";
+  stateScale.voicing = "close";
 
-const padLikeForPreview = computed(() => {
-  const pad = model.value || {};
-  const mode = pad.mode || "scale";
-  const normalized = {
-    ...pad,
-    mode,
-    assigned: true,
-    scale: props.globalScale,
-    scaleTypeScale: props.globalScaleType,
-    scaleTypeFree: scaleTypeProxy.value,
-    voicingScale: voicingProxy.value,
-    voicingFree: voicingProxy.value,
-    inversionScale: inversionProxy.value,
-    inversionFree: inversionProxy.value,
-    octaveScale: octaveProxy.value,
-    octaveFree: octaveProxy.value,
-  };
-  if (mode === "scale" && !normalized.degree) {
-    normalized.degree = props.editChordOptions?.[0]?.degree || "I";
-  }
-  if (mode === "free" && !normalized.freeRoot) {
-    normalized.freeRoot = props.globalScale || "C";
-  }
-  return normalized;
-});
+  stateFree.root = "C";
+  stateFree.type = "major";
+  stateFree.octave = 4;
+  stateFree.extension = "triad";
+  stateFree.inversion = "root";
+  stateFree.voicing = "close";
+}
 
-const chordMetadata = computed(() =>
-  getPadChordMetadata(padLikeForPreview.value)
+// When the global scale changes, reset the edit selections to defaults
+watch(
+  () => [props.globalScale, props.globalScaleType],
+  () => {
+    resetToDefaults();
+  },
+  { immediate: false }
 );
 
-const extensionOptions = computed(() => {
-  const options = allowedVoicingsForMetadata(chordMetadata.value);
-  return options.length ? options : ["triad"];
-});
+defineExpose({ open, close, dlg, resetToDefaults });
+
+// --- Saving support ---
+function buildPadSnapshot() {
+  return {
+    mode: model.value.mode,
+    assigned: true,
+    scale: {
+      degree: stateScale.degree,
+      octave: stateScale.octave,
+      extension: stateScale.extension,
+      inversion: stateScale.inversion,
+      voicing: stateScale.voicing,
+    },
+    free: {
+      root: stateFree.root,
+      type: stateFree.type,
+      octave: stateFree.octave,
+      extension: stateFree.extension,
+      inversion: stateFree.inversion,
+      voicing: stateFree.voicing,
+    },
+  };
+}
+
+function applyPadState(s) {
+  if (!s || typeof s !== "object") return;
+  if (s.mode === "scale" || s.mode === "free") model.value.mode = s.mode;
+  if (s.scale && typeof s.scale === "object") {
+    if (s.scale.degree != null) stateScale.degree = String(s.scale.degree);
+    if (s.scale.octave != null) stateScale.octave = Number(s.scale.octave);
+    if (s.scale.extension) stateScale.extension = String(s.scale.extension);
+    if (s.scale.inversion) stateScale.inversion = String(s.scale.inversion);
+    if (s.scale.voicing) stateScale.voicing = String(s.scale.voicing);
+  }
+  if (s.free && typeof s.free === "object") {
+    if (s.free.root) stateFree.root = String(s.free.root);
+    if (s.free.type) stateFree.type = String(s.free.type);
+    if (s.free.octave != null) stateFree.octave = Number(s.free.octave);
+    if (s.free.extension) stateFree.extension = String(s.free.extension);
+    if (s.free.inversion) stateFree.inversion = String(s.free.inversion);
+    if (s.free.voicing) stateFree.voicing = String(s.free.voicing);
+  }
+}
 
 watch(
-  extensionOptions,
-  (options) => {
-    const list = options && options.length ? options : ["triad"];
-    if (list.includes(voicingProxy.value)) return;
-    voicingProxy.value = list[0];
-  },
-  { immediate: true }
+  () => props.padState,
+  (s) => applyPadState(s),
+  { immediate: true, deep: false }
 );
-
-const previewNotesAsc = computed(() => {
-  const pad = padLikeForPreview.value;
-  if (!pad || pad.mode === "unassigned" || pad.assigned === false) return [];
-  const octRaw = pad.mode === "free" ? pad.octaveFree : pad.octaveScale;
-  const parsed = Number(octRaw);
-  const baseOct = Number.isFinite(parsed) ? parsed : 4;
-  const notes = computeVoicingNotes(pad, baseOct);
-  return notes || [];
-});
-
-const previewNotesHtml = computed(() => {
-  const pad = padLikeForPreview.value;
-  if (!previewNotesAsc.value.length) return "—";
-  const display = toDisplayNotesForPad(previewNotesAsc.value, pad);
-  return display.length ? display.join(" ") : "—";
-});
-
-const previewChordHtml = computed(() => {
-  const pad = padLikeForPreview.value;
-  if (!pad || pad.mode === "unassigned" || pad.assigned === false) return "—";
-  const sym = chordDisplayForPad(pad);
-  return sym || "—";
-});
-
-const hasChordForPreview = computed(() => previewNotesAsc.value.length > 0);
 </script>

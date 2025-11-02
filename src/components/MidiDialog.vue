@@ -63,15 +63,13 @@
         <!-- 1.2) Permission granted but not connected yet -->
         <template v-else-if="permission === 'granted' && !midiEnabled">
           <div class="dialog-content">
-            <h3>Connect to MIDI</h3>
-            <p>
-              Permission granted. Connect to your MIDI subsystem to continue.
-            </p>
+            <h3 class="color-valid">MIDI allowed</h3>
+            <p>Connect MIDI to continue.</p>
           </div>
           <div class="dialog-content">
             <button
               type="button"
-              class="button block large valid"
+              class="button block large"
               @click="$emit('request-connect')"
             >
               Connect MIDI

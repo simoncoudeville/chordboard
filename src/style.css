@@ -38,7 +38,7 @@
   --color-layer-3: var(--color-gray-400);
   --color-text: var(--color-gray-500);
   --color-text-meta: var(--color-gray-400);
-  --color-border: var(--color-gray-200);
+  --color-border: var(--color-gray-300);
 }
 
 * {
@@ -130,6 +130,10 @@ button {
   }
 }
 
+.icon {
+  padding: var(--space-0-5);
+}
+
 .button.icon {
   width: var(--space-4);
   aspect-ratio: 1;
@@ -138,6 +142,10 @@ button {
   justify-content: center;
   text-align: center;
   padding: 0;
+}
+
+.button.midi {
+  padding: 0 var(--space-1);
 }
 
 .button.block {
@@ -154,7 +162,7 @@ button {
 .button.scale {
   /* background-color: var(--color-scale);
   color: var(--color-layer-0); */
-  color: var(--color-scale);
+  /* color: var(--color-scale); */
 }
 
 .button.md {
@@ -275,7 +283,8 @@ dialog:open {
 .midi-status-container {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-0-5);
+  /* margin-right: calc(var(--space-0-5) * -1); */
 }
 
 .midi-status-symbol {
@@ -488,9 +497,16 @@ dialog:open {
   grid-column: span 2;
 }
 
+.chord-preview-output {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  /* justify-content: space-between; */
+}
+
 .chord-preview {
   display: grid;
-  gap: var(--space-1);
+  gap: var(--space-1-5);
 }
 
 .sr-only {
@@ -509,13 +525,13 @@ dialog:open {
   gap: 1px;
   /* gap: var(--space-1); */
   /* margin-left: calc(var(--space-1) * -1); */
-  background-color: var(--color-layer-1);
+  background-color: var(--color-layer-2);
   border-radius: var(--radius);
   padding: 1px;
 }
 
 .toggle-button {
-  color: var(--color-text-meta);
+  color: var(--color-layer-0);
   font-weight: 500;
   padding: var(--space-1) var(--space-2);
   flex-basis: 50%;
@@ -532,7 +548,12 @@ dialog:open {
 .global-scale-info {
   display: flex;
   align-items: center;
+  /* justify-content: center; */
   gap: var(--space-0-5);
+  color: var(--color-text-meta);
+  /* padding: var(--space-1);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border); */
 }
 
 .custom-select {

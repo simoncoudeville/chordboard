@@ -25,7 +25,7 @@
           <span class="label-text">Root</span>
           <CustomSelect
             v-model="scaleLocal"
-            :options="MAJOR_KEY_OPTIONS"
+            :options="scaleRoots"
             option-value-key="value"
             option-label-key="label"
             wrapper-class="select-scale"
@@ -33,17 +33,22 @@
         </label>
         <label>
           <span class="label-text">Type</span>
-          <CustomSelect v-model="typeLocal" :options="['major', 'minor']" />
+          <CustomSelect
+            v-model="typeLocal"
+            :options="scaleTypes"
+            option-value-key="value"
+            option-label-key="label"
+          />
         </label>
-        <p
-          v-if="isDirty && scalePadCount > 0"
-          class="grid-span-2 color-warning"
-        >
-          Changing the global scale will reset {{ scalePadCount }} pads
-          currently in Scale mode.
-        </p>
       </div>
-
+      <div
+        v-if="isDirty && scalePadCount > 0"
+        class="dialog-content color-warning"
+      >
+        Changing the global scale will reset
+        {{ scalePadCount }} {{ scalePadCount === 1 ? "pad" : "pads" }}
+        currently in Scale mode.
+      </div>
       <div class="dialog-buttons">
         <button type="button" @click="onClose">Cancel</button>
         <button type="button" @click="onSave" :disabled="!isDirty">Save</button>
@@ -58,9 +63,8 @@ import { X } from "lucide-vue-next";
 import CustomSelect from "./CustomSelect.vue";
 
 const props = defineProps({
-  modelScale: { type: String, required: true },
-  modelType: { type: String, required: true },
-  MAJOR_KEY_OPTIONS: { type: Array, default: () => [] },
+  modelScale: { type: String, default: "" },
+  modelType: { type: String, default: "" },
   scalePadCount: { type: Number, default: 0 },
 });
 const emit = defineEmits(["save", "close"]);
@@ -69,6 +73,39 @@ const dlg = ref(null);
 // Local, confirm-on-save state
 const scaleLocal = ref(props.modelScale);
 const typeLocal = ref(props.modelType);
+
+// Scale options: display both sharp and flat names for black keys
+const scaleRoots = computed(() => [
+  { value: "C", label: "C" },
+  { value: "Db", label: "C#/Db" },
+  { value: "D", label: "D" },
+  { value: "Eb", label: "D#/Eb" },
+  { value: "E", label: "E" },
+  { value: "F", label: "F" },
+  { value: "Gb", label: "F#/Gb" },
+  { value: "G", label: "G" },
+  { value: "Ab", label: "G#/Ab" },
+  { value: "A", label: "A" },
+  { value: "Bb", label: "A#/Bb" },
+  { value: "B", label: "B" },
+]);
+
+const usefulScaleTypes = [
+  "major",
+  "minor",
+  "dorian",
+  "mixolydian",
+  "lydian",
+  "phrygian",
+  "harmonic minor",
+];
+
+const scaleTypes = computed(() =>
+  usefulScaleTypes.map((name) => ({
+    value: name,
+    label: name.replace(/-/g, " "),
+  }))
+);
 
 const isDirty = computed(
   () =>
@@ -94,5 +131,5 @@ function onSave() {
   close();
 }
 
-defineExpose({ open, close, dlg });
+defineExpose({ open });
 </script>

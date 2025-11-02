@@ -6,21 +6,24 @@
     />
     <div class="midi-status-container">
       <button
-        class="button md"
-        :class="midiEnabled && outputs.length > 0 ? 'valid' : 'warning'"
+        class="icon midi"
+        :class="midiEnabled && outputs.length > 0 ? '' : 'warning'"
         type="button"
         @click="openMidiDialog"
         :disabled="!midiSupported"
         :title="!midiSupported ? 'Your browser does not support Web MIDI' : ''"
       >
-        MIDI
+        <!--MIDI-->
+        <!--<Cable aria-hidden="true" :size="21" stroke-width="1.5" /> -->
+        <Icon
+          :iconNode="Midi"
+          aria-hidden="true"
+          :size="21"
+          stroke-width="1.75"
+        />
       </button>
-      <button
-        class="button md icon scale"
-        type="button"
-        @click="openGlobalKeyDialog"
-      >
-        <Music2 aria-hidden="true" :size="14" stroke-width="2" />
+      <button class="icon scale" type="button" @click="openGlobalKeyDialog">
+        <Music2 aria-hidden="true" :size="21" stroke-width="1.75" />
       </button>
     </div>
   </div>
@@ -30,31 +33,24 @@
     :permission-allowed="permissionAllowed"
     :midi-enabled="midiEnabled"
     :pad-button-label-html="padButtonLabelHtml"
-    @start-pad="startPad"
-    @stop-pad="stopPad"
-    @edit="openEdit"
+    @start-pad="onStartPad"
+    @stop-pad="onStopPad"
+    @edit="openEditDialog"
   />
 
   <EditDialog
     ref="editDialogRef"
-    :pad-index="currentEditIndex"
-    v-model:model-value="editModel"
-    v-model:edit-scale-type-model="editScaleType"
-    v-model:edit-voicing-model="editVoicing"
-    v-model:edit-inversion-model="editInversion"
-    v-model:edit-octave-model="editOctave"
-    :edit-chord-options="editChordOptions"
-    :edit-inversions="editInversions"
-    :MAJOR_KEY_OPTIONS="MAJOR_KEY_OPTIONS"
+    :pad-index="currentPadIndex"
+    :pad-state="pads[currentPadIndex]"
     :global-scale="globalScale"
     :global-scale-type="globalScaleType"
     :permission-allowed="permissionAllowed"
     :midi-enabled="midiEnabled"
-    :is-edit-dirty="isEditDirty"
+    :is-edit-dirty="true"
+    @preview-start="onPreviewStart"
+    @preview-stop="onPreviewStop"
     @save="saveEdit"
     @close="closeEdit"
-    @preview-start="startPreview"
-    @preview-stop="stopPreview"
   />
 
   <MidiDialog
@@ -78,7 +74,6 @@
 
   <GlobalKeyDialog
     ref="globalKeyDialogRef"
-    :MAJOR_KEY_OPTIONS="MAJOR_KEY_OPTIONS"
     :model-scale="globalScale"
     :model-type="globalScaleType"
     :scale-pad-count="scaleModePadCount"
@@ -97,51 +92,112 @@ import {
   nextTick,
 } from "vue";
 import { WebMidi } from "webmidi";
-import { Music2 } from "lucide-vue-next";
+import { Music2, Cable, CircleEllipsis, Circle } from "lucide-vue-next";
+import { Icon } from "lucide-vue-next";
+
+// Icon data for FoobarIcon (no export needed in <script setup>)
+const Midi = [
+  [
+    "path",
+    {
+      d: "M12 18h.01",
+      key: "mhygvu",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M16.24 16.24h.01",
+      key: "1x84wr",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M18 12h.01",
+      key: "yjnet6",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M6 12h.01",
+      key: "c2rlol",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M7.76 16.24h.01",
+      key: "11ncrc",
+    },
+  ],
+  [
+    "circle",
+    {
+      cx: "12",
+      cy: "12",
+      r: "10",
+      key: "1mglay",
+    },
+  ],
+];
+
+const Midi2 = [
+  [
+    "path",
+    {
+      d: "M12 17h.01",
+      key: "p32p05",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M15.5 15.5h.01",
+      key: "14q5rk",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M17 12h.01",
+      key: "1m0b6t",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M7 12h.01",
+      key: "eqddd0",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M8.5 15.5h.01",
+      key: "pctjho",
+    },
+  ],
+  [
+    "circle",
+    {
+      cx: "12",
+      cy: "12",
+      r: "10",
+      key: "1mglay",
+    },
+  ],
+];
+
 import Keyboard from "./components/Keyboard.vue";
 import PadGrid from "./components/PadGrid.vue";
 import EditDialog from "./components/EditDialog.vue";
 import MidiDialog from "./components/MidiDialog.vue";
 import GlobalKeyDialog from "./components/GlobalKeyDialog.vue";
 import { useMidi } from "./composables/useMidi";
-import { usePads } from "./composables/usePads";
-import { useGlobalKey } from "./composables/useGlobalKey";
-import {
-  chordDisplayForPad,
-  computeOrderedChordPcs,
-  computeVoicingNotes,
-  toDisplayNotesForPad,
-  pcToCssKey,
-  MAJOR_DEGREES,
-  MINOR_DEGREES,
-  getPadChordMetadata,
-} from "./composables/theory";
-
-const INVERSION_LABELS = [
-  "root",
-  "1st",
-  "2nd",
-  "3rd",
-  "4th",
-  "5th",
-  "6th",
-  "7th",
-];
-
-const MAJOR_KEY_OPTIONS = [
-  { value: "C", label: "C" },
-  { value: "Db", label: "C#/Db" },
-  { value: "D", label: "D" },
-  { value: "Eb", label: "D#/Eb" },
-  { value: "E", label: "E" },
-  { value: "F", label: "F" },
-  { value: "Gb", label: "F#/Gb" },
-  { value: "G", label: "G" },
-  { value: "Ab", label: "G#/Ab" },
-  { value: "A", label: "A" },
-  { value: "Bb", label: "A#/Bb" },
-  { value: "B", label: "B" },
-];
+import { Scale, Chord, Note } from "@tonaljs/tonal";
+import { pcToKeyToken } from "./utils/music";
 
 const {
   midiEnabled,
@@ -152,6 +208,7 @@ const {
   selectedOutCh,
   permissionAllowed: permissionAllowedMidi,
   permissionPrompt: permissionPromptMidi,
+  midiWasConnected,
   connectMidi,
   disconnectMidi,
   updatePermissionStatus,
@@ -162,22 +219,15 @@ const {
   saveMidiSettings,
 } = useMidi();
 
-const log = ref([]);
-const nowPlaying = ref("");
 const midiSupported = ref(true);
-const stickyNotes = ref([]);
-const stickyLabel = ref("");
-const lastActiveIdx = ref(null);
 const permissionAllowed = permissionAllowedMidi;
 const permissionPrompt = permissionPromptMidi;
-const nowPlayingHtml = computed(() => nowPlaying.value);
-const activePads = ref({});
-const previewActive = ref(null);
-const activeKeySet = ref(new Set());
 
 const editDialogRef = ref(null);
 const midiDialogRef = ref(null);
 const globalKeyDialogRef = ref(null);
+
+const currentPadIndex = ref(0);
 
 const midiModelOutputId = ref("");
 const midiModelOutCh = ref(1);
@@ -192,69 +242,50 @@ const isMidiDirty = computed(() => {
   return selectedOutputId.value !== id || Number(selectedOutCh.value) !== ch;
 });
 
-function formatNowPlaying(label, notes) {
-  // Only show played notes, not the chord label
-  return Array.isArray(notes) && notes.length ? notes.join(" ") : "";
-}
-
-function labelForPadLike(padLike) {
-  if (!padLike || padLike.mode === "unassigned" || padLike.assigned === false)
-    return "Unassigned";
-  const symbol = chordDisplayForPad(padLike) || "";
-  if (padLike.mode === "scale") {
-    return symbol || padLike.degree || "Chord";
+// Global scale state
+const globalScale = ref("C");
+const globalScaleType = ref("major");
+const globalScaleNotes = computed(() => {
+  try {
+    return (
+      Scale.get(`${globalScale.value} ${globalScaleType.value}`).notes || []
+    );
+  } catch {
+    return [];
   }
-  return symbol || "Custom";
+});
+
+const GLOBAL_SCALE_KEY = "midi-test:global-scale";
+
+// Load global scale settings from localStorage
+function loadGlobalScaleSettings() {
+  try {
+    const raw = localStorage.getItem(GLOBAL_SCALE_KEY);
+    if (!raw) return;
+    const obj = JSON.parse(raw);
+    if (obj && typeof obj === "object") {
+      if (obj.scale) globalScale.value = obj.scale;
+      if (obj.type) globalScaleType.value = obj.type;
+    }
+  } catch {}
 }
 
-function buildPadInfo(rawPad) {
-  const padLike = asPadLike(rawPad);
-  if (!padLike || padLike.mode === "unassigned" || padLike.assigned === false)
-    return null;
-  const baseOctaveRaw =
-    padLike.mode === "free" ? padLike.octaveFree : padLike.octaveScale;
-  const parsedOct = Number(baseOctaveRaw);
-  const baseOctave = Number.isFinite(parsedOct) ? parsedOct : 4;
-  const orderedPcs = computeOrderedChordPcs(padLike) || [];
-  const notes = orderedPcs.length
-    ? computeVoicingNotes(padLike, baseOctave)
-    : [];
-  const displayNotes = toDisplayNotesForPad(notes, padLike);
-  const cssKeys = orderedPcs.map((pc) => pcToCssKey(pc));
-  const label = labelForPadLike(padLike);
-  return { padLike, notes, displayNotes, cssKeys, label };
+// Save global scale settings to localStorage
+function saveGlobalScaleSettings() {
+  try {
+    localStorage.setItem(
+      GLOBAL_SCALE_KEY,
+      JSON.stringify({
+        scale: globalScale.value,
+        type: globalScaleType.value,
+      })
+    );
+  } catch {}
 }
 
-function setActiveKeys(keys = []) {
-  const keySet = new Set();
-  (keys || []).forEach((k) => {
-    if (k) keySet.add(String(k).toLowerCase());
-  });
-  activeKeySet.value = keySet;
-}
-
-function refreshActiveKeys() {
-  const keys = new Set();
-  Object.values(activePads.value).forEach((info) => {
-    (info?.cssKeys || []).forEach((k) => keys.add(k));
-  });
-  activeKeySet.value = keys;
-}
-
-function syncNowPlayingFromActivePads() {
-  const indices = Object.keys(activePads.value)
-    .map((n) => Number(n))
-    .filter((n) => !Number.isNaN(n))
-    .sort((a, b) => a - b);
-  if (indices.length) {
-    const idx = indices[indices.length - 1];
-    lastActiveIdx.value = idx;
-    const info = activePads.value[idx];
-    nowPlaying.value = formatNowPlaying(info?.label || "", info?.displayNotes);
-    return;
-  }
-  lastActiveIdx.value = null;
-  nowPlaying.value = formatNowPlaying(stickyLabel.value, stickyNotes.value);
+function openEditDialog(idx) {
+  currentPadIndex.value = idx;
+  editDialogRef.value?.open?.();
 }
 
 function openMidiDialog() {
@@ -277,13 +308,33 @@ function openGlobalKeyDialog() {
 function onCloseGlobalKey() {}
 
 function saveGlobalKey({ scale, type }) {
-  const changed = globalScale.value !== scale || globalScaleType.value !== type;
+  const changed =
+    String(scale) !== String(globalScale.value) ||
+    String(type) !== String(globalScaleType.value);
+  if (changed) {
+    // Reset affected pads silently; warning is shown inline in dialog
+    const hasAffected = (pads.value || []).some(
+      (p) => p && p.mode === "scale" && p.assigned !== false
+    );
+    if (hasAffected) {
+      pads.value = pads.value.map((p) =>
+        p && p.mode === "scale" && p.assigned !== false ? defaultPad() : p
+      );
+      savePads();
+    }
+  }
   globalScale.value = scale;
   globalScaleType.value = type;
-  if (changed) {
-    (pads.value || []).forEach((pad, idx) => {
-      if (pad?.mode === "scale") resetPad(idx);
-    });
+  saveGlobalScaleSettings();
+}
+
+function rescanMidi() {
+  try {
+    renderDevices();
+    const exists = outputs.value?.find((o) => o.id === midiModelOutputId.value);
+    if (!exists) midiModelOutputId.value = outputs.value?.[0]?.id || "";
+  } catch (err) {
+    // Error rescanning MIDI
   }
 }
 
@@ -292,17 +343,6 @@ function saveMidiDialog() {
   selectedOutCh.value = Number(midiModelOutCh.value) || 1;
   saveMidiSettings();
   closeMidiDialog();
-}
-
-function rescanMidi() {
-  try {
-    renderDevices();
-    const exists = outputs.value?.find((o) => o.id === midiModelOutputId.value);
-    if (!exists) midiModelOutputId.value = outputs.value?.[0]?.id || "";
-    logMsg("MIDI devices rescanned");
-  } catch (err) {
-    logMsg(`Error rescanning MIDI: ${err?.message || err}`);
-  }
 }
 
 watch(
@@ -344,96 +384,61 @@ async function handleRequestConnect() {
   await updatePermissionStatus();
 }
 
-function asPadLike(pad) {
-  if (!pad) return null;
-  if (pad.mode === "scale") {
-    return {
-      ...pad,
-      scale: globalScale.value,
-      scaleTypeScale: globalScaleType.value,
-    };
-  }
-  return pad;
-}
-
-function stopAllActive() {
-  Object.keys(activePads.value).forEach((idx) => {
-    const active = activePads.value[idx];
-    if (!active) return;
-    if (active.outputId && active.channel != null) {
-      const output = WebMidi.outputs.find((o) => o.id === active.outputId);
-      const ch = output?.channels?.[active.channel];
-      if (ch) {
-        for (const note of active.notes || []) ch.sendNoteOff(note);
-      }
-    }
-    delete activePads.value[idx];
-  });
-  activePads.value = {};
-  previewActive.value = null;
-  clearVisualDisplay();
-}
-
 function clearVisualDisplay() {
-  activeKeySet.value = new Set();
-  nowPlaying.value = "";
-  stickyNotes.value = [];
-  stickyLabel.value = "";
-  lastActiveIdx.value = null;
+  // Do nothing
 }
 
-function defaultChord() {
+const PAD_COUNT = 15;
+const PADS_KEY = "midi-test:pads";
+
+function defaultPad() {
   return {
     mode: "unassigned",
-    scale: "C",
-    scaleTypeScale: "major",
-    voicingScale: "triad",
-    inversionScale: "root",
-    octaveScale: 4,
-    degree: "I",
-    freeRoot: "C",
-    scaleTypeFree: "major",
-    voicingFree: "triad",
-    inversionFree: "root",
-    octaveFree: 4,
     assigned: false,
+    scale: {
+      degree: "1",
+      octave: 4,
+      extension: "triad",
+      inversion: "root",
+      voicing: "close",
+    },
+    free: {
+      root: "C",
+      type: "major",
+      octave: 4,
+      extension: "triad",
+      inversion: "root",
+      voicing: "close",
+    },
   };
 }
 
-const { pads, setPad, resetPad, rehydrate, persistOnChange } = usePads();
-const {
-  globalScale,
-  globalScaleType,
-  rehydrateGlobalKey,
-  persistOnChange: persistGlobalKey,
-} = useGlobalKey();
+const pads = ref(Array.from({ length: PAD_COUNT }, defaultPad));
 
-const scaleModePadCount = computed(
-  () => (pads.value || []).filter((p) => p?.mode === "scale").length
-);
-
-const contextMenuHandler = (e) => {
+function loadPads() {
   try {
-    e.preventDefault();
+    const raw = localStorage.getItem(PADS_KEY);
+    const parsed = JSON.parse(raw || "null");
+    if (Array.isArray(parsed) && parsed.length === PAD_COUNT) {
+      pads.value = parsed.map((p) => ({ ...defaultPad(), ...p }));
+    }
   } catch {}
-};
+}
+function savePads() {
+  try {
+    localStorage.setItem(PADS_KEY, JSON.stringify(pads.value));
+  } catch {}
+}
 
 onMounted(() => {
-  rehydrate();
-  persistOnChange();
-  rehydrateGlobalKey();
-  persistGlobalKey();
   midiSupported.value = Boolean(
     (WebMidi && "supported" in WebMidi ? WebMidi.supported : undefined) ??
       (typeof navigator !== "undefined" &&
         typeof navigator.requestMIDIAccess === "function")
   );
   updatePermissionStatus();
-
-  window.addEventListener("blur", stopAllActive);
-  document.addEventListener("visibilitychange", onVisibilityChange);
-  window.addEventListener("beforeunload", stopAllActive);
-  document.addEventListener("contextmenu", contextMenuHandler);
+  loadGlobalScaleSettings();
+  loadPads();
 
   nextTick(() => {
     try {
@@ -443,138 +448,8 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  stopAllActive();
-  window.removeEventListener("blur", stopAllActive);
-  document.removeEventListener("visibilitychange", onVisibilityChange);
-  window.removeEventListener("beforeunload", stopAllActive);
-  document.removeEventListener("contextmenu", contextMenuHandler);
   disconnectMidi();
 });
-
-const currentEditIndex = ref(0);
-const editModel = ref(defaultChord());
-
-const editScaleType = computed({
-  get: () =>
-    editModel.value.mode === "free"
-      ? editModel.value.scaleTypeFree
-      : editModel.value.scaleTypeScale,
-  set: (val) => {
-    if (editModel.value.mode === "free") editModel.value.scaleTypeFree = val;
-    else editModel.value.scaleTypeScale = val;
-  },
-});
-
-const editVoicing = computed({
-  get: () =>
-    editModel.value.mode === "free"
-      ? editModel.value.voicingFree
-      : editModel.value.voicingScale,
-  set: (val) => {
-    if (editModel.value.mode === "free") editModel.value.voicingFree = val;
-    else editModel.value.voicingScale = val;
-  },
-});
-
-const editInversion = computed({
-  get: () =>
-    editModel.value.mode === "free"
-      ? editModel.value.inversionFree
-      : editModel.value.inversionScale,
-  set: (val) => {
-    if (editModel.value.mode === "free") editModel.value.inversionFree = val;
-    else editModel.value.inversionScale = val;
-  },
-});
-
-const editOctave = computed({
-  get: () =>
-    editModel.value.mode === "free"
-      ? editModel.value.octaveFree
-      : editModel.value.octaveScale,
-  set: (val) => {
-    const next = Math.min(6, Math.max(2, Number(val) || 4));
-    if (editModel.value.mode === "free") editModel.value.octaveFree = next;
-    else editModel.value.octaveScale = next;
-  },
-});
-
-const isEditDirty = computed(() => {
-  const pad = pads.value[currentEditIndex.value] || defaultChord();
-  const model = editModel.value;
-  if (pad.mode === "unassigned" || pad.assigned === false) {
-    return model.mode !== "unassigned" || model.degree !== "I";
-  }
-  return (
-    pad.mode !== model.mode ||
-    pad.scale !== model.scale ||
-    pad.freeRoot !== model.freeRoot ||
-    pad.scaleTypeScale !== model.scaleTypeScale ||
-    pad.scaleTypeFree !== model.scaleTypeFree ||
-    pad.degree !== model.degree ||
-    pad.voicingScale !== model.voicingScale ||
-    pad.voicingFree !== model.voicingFree ||
-    pad.inversionScale !== model.inversionScale ||
-    pad.inversionFree !== model.inversionFree ||
-    Number(pad.octaveScale) !== Number(model.octaveScale) ||
-    Number(pad.octaveFree) !== Number(model.octaveFree)
-  );
-});
-
-const editChordOptions = computed(() => {
-  const type =
-    (globalScaleType.value || "major") === "minor" ? "minor" : "major";
-  const degrees = type === "minor" ? MINOR_DEGREES : MAJOR_DEGREES;
-  return degrees.map((degree) => {
-    const padLike = {
-      mode: "scale",
-      assigned: true,
-      degree,
-      scale: globalScale.value,
-      scaleTypeScale: type,
-      voicingScale: "triad",
-      inversionScale: "root",
-    };
-    const label = labelForPadLike(padLike);
-    // Always show degree number in select
-    return {
-      degree,
-      name: `${degree} ${label}`,
-      display: `${degree} - ${label}`,
-    };
-  });
-});
-
-const editInversions = computed(() => {
-  const pad = editModel.value || defaultChord();
-  const padLike = asPadLike({ ...pad, assigned: true });
-  if (!padLike || padLike.mode === "unassigned" || padLike.assigned === false)
-    return INVERSION_LABELS.slice(0, 1);
-  const meta = getPadChordMetadata(padLike);
-  // Use fullNoteCount for inversions so tensions are included
-  const count = meta?.fullNoteCount || 0;
-  const max = count > 0 ? Math.min(count, INVERSION_LABELS.length) : 1;
-  return INVERSION_LABELS.slice(0, Math.max(1, max));
-});
-
-watch(
-  editInversions,
-  (options) => {
-    const list = options && options.length ? options : ["root"];
-    const pad = editModel.value;
-    if (!pad) return;
-    const mode = pad.mode === "free" ? "free" : "scale";
-    const current =
-      mode === "free"
-        ? pad.inversionFree || "root"
-        : pad.inversionScale || "root";
-    if (list.includes(current)) return;
-    const fallback = list[0] || "root";
-    if (mode === "free") editModel.value.inversionFree = fallback;
-    else editModel.value.inversionScale = fallback;
-  },
-  { immediate: true }
-);
 
 const statusDisplay = computed(() => {
   if (!midiSupported.value) return "Web MIDI not supported";
@@ -588,13 +463,24 @@ const statusDisplay = computed(() => {
   return status.value || "MIDI not connected";
 });
 
+// Count scale-mode pads for inline warning in GlobalKeyDialog
+const scaleModePadCount = computed(() =>
+  (pads.value || []).reduce(
+    (acc, p) => acc + (p && p.mode === "scale" && p.assigned !== false ? 1 : 0),
+    0
+  )
+);
+
 watch(
   () => permission.value,
   async (p) => {
     if (p === "granted" && midiSupported.value && !midiEnabled.value) {
       try {
-        await connectMidi();
-        applySavedMidiSettings();
+        // Auto-connect if MIDI was connected in the last session
+        if (midiWasConnected.value) {
+          await connectMidi();
+          applySavedMidiSettings();
+        }
       } catch {}
     }
   },
@@ -607,166 +493,373 @@ watch(
     if (enabled) {
       applySavedMidiSettings();
     } else {
-      stopAllActive();
       disconnectMidi();
     }
   },
   { immediate: true }
 );
 
-function openEdit(idx) {
-  clearVisualDisplay();
-  currentEditIndex.value = idx;
-  const pad = pads.value[idx] || defaultChord();
-  const isUnassigned = pad.mode === "unassigned" || pad.assigned === false;
-  editModel.value = {
-    ...defaultChord(),
-    ...pad,
-    mode: isUnassigned ? "scale" : pad.mode || "free",
-    scale: globalScale.value,
-    scaleTypeScale: globalScaleType.value,
-    assigned: true,
-  };
-  nextTick(() => {
-    if (isUnassigned) {
-      editModel.value.degree = editChordOptions.value?.[0]?.degree || "I";
-      editModel.value.inversionScale = "root";
-      editModel.value.inversionFree = "root";
-    }
-    editDialogRef.value?.open?.();
-  });
-}
-
-function closeEdit() {
+function saveEdit(snapshot) {
   try {
-    stopPreview();
+    const idx = Number(currentPadIndex.value) || 0;
+    const next = { ...defaultPad(), ...snapshot, assigned: true };
+    pads.value.splice(idx, 1, next);
+    savePads();
   } catch {}
-  editDialogRef.value?.close?.();
-}
-
-function saveEdit() {
-  setPad(currentEditIndex.value, { ...editModel.value, assigned: true });
   closeEdit();
 }
 
-function padButtonLabel(pad) {
-  return labelForPadLike(asPadLike(pad));
+function closeEdit() {
+  editDialogRef.value?.close?.();
+}
+
+// Build chord label and notes from pad state
+function semitoneDistance(pcFrom, pcTo) {
+  const base = Note.midi(`${pcFrom}4`) ?? 60;
+  let target = Note.midi(`${pcTo}4`) ?? base;
+  while (target < base) target += 12;
+  return (target - base) % 12;
+}
+function qualityFromTriad(triad, rootPc) {
+  const [r, t, f] = triad;
+  if (!r || !t || !f) return "";
+  const third = semitoneDistance(rootPc, t);
+  const fifth = semitoneDistance(rootPc, f);
+  if (third === 3 && fifth === 6) return "dim";
+  if (third === 4 && fifth === 8) return "aug";
+  if (third === 3 && fifth === 7) return "m";
+  if (third === 4 && fifth === 7) return "";
+  return "";
+}
+function qualityForDegree(index) {
+  const s = Array.isArray(globalScaleNotes.value) ? globalScaleNotes.value : [];
+  if (s.length < 3) return "";
+  const i = index % s.length;
+  const triad = [s[i], s[(i + 2) % s.length], s[(i + 4) % s.length]];
+  return qualityFromTriad(triad, s[i]);
+}
+
+function buildChordSymbol(rootPc, isMinor, ext) {
+  const suffixMap = {
+    triad: "",
+    7: "7",
+    maj7: "maj7",
+    9: "9",
+    add9: "add9",
+    sus2: "sus2",
+    sus4: "sus4",
+  };
+  const suffix = suffixMap[ext] ?? "";
+  if (!isMinor) return `${rootPc}${suffix}`;
+  if (ext === "7") return `${rootPc}m7`;
+  if (ext === "9") return `${rootPc}m9`;
+  if (ext === "maj7") return `${rootPc}mMaj7`;
+  if (ext === "add9") return `${rootPc}madd9`;
+  if (ext === "sus2" || ext === "sus4") return `${rootPc}${suffix}`;
+  return `${rootPc}m${suffix}`;
+}
+
+function buildChordSymbolFromQuality(rootPc, quality, ext) {
+  if (ext === "sus2" || ext === "sus4") return `${rootPc}${ext}`;
+  if (ext === "triad") {
+    if (quality === "m") return `${rootPc}m`;
+    if (quality === "dim") return `${rootPc}dim`;
+    if (quality === "aug") return `${rootPc}aug`;
+    return `${rootPc}`;
+  }
+  if (ext === "7") {
+    if (quality === "m") return `${rootPc}m7`;
+    if (quality === "dim") return `${rootPc}m7b5`;
+    if (quality === "aug") return `${rootPc}7#5`;
+    return `${rootPc}7`;
+  }
+  if (ext === "maj7") {
+    if (quality === "m") return `${rootPc}mMaj7`;
+    if (quality === "aug") return `${rootPc}maj7#5`;
+    return `${rootPc}maj7`;
+  }
+  if (ext === "9") {
+    if (quality === "m") return `${rootPc}m9`;
+    return `${rootPc}9`;
+  }
+  if (ext === "add9") {
+    if (quality === "m") return `${rootPc}madd9`;
+    if (quality === "dim") return `${rootPc}dim`;
+    if (quality === "aug") return `${rootPc}aug`;
+    return `${rootPc}add9`;
+  }
+  return `${rootPc}`;
+}
+
+function pcsToAscending(pcs, baseOct) {
+  const out = [];
+  let lastMidi = -Infinity;
+  let oct = Number.isFinite(baseOct) ? baseOct : 4;
+  for (const pc of pcs) {
+    let n = `${pc}${oct}`;
+    let m = Note.midi(n) ?? -Infinity;
+    if (m <= lastMidi) {
+      oct += 1;
+      n = `${pc}${oct}`;
+      m = Note.midi(n) ?? m;
+    }
+    out.push(n);
+    lastMidi = m;
+  }
+  return out;
+}
+
+// --- Inversion & Voicing helpers (mirror EditDialog logic) ---
+function sortByMidi(notes) {
+  return [...notes].sort((a, b) => (Note.midi(a) ?? 0) - (Note.midi(b) ?? 0));
+}
+function raiseOct(note, delta = 1) {
+  const info = Note.get(note);
+  const pc = info?.pc || note.replace(/[0-9]/g, "");
+  const baseOct =
+    typeof info?.oct === "number"
+      ? info.oct
+      : Number.parseInt(note.replace(/^[^0-9]+/, ""), 10) || 4;
+  return `${pc}${baseOct + delta}`;
+}
+function lowerOct(note, delta = 1) {
+  return raiseOct(note, -delta);
+}
+function insertAscending(arr, note) {
+  const m = Note.midi(note) ?? 0;
+  const out = [];
+  let inserted = false;
+  for (const n of arr) {
+    const mi = Note.midi(n) ?? 0;
+    if (!inserted && m <= mi) {
+      out.push(note);
+      inserted = true;
+    }
+    out.push(n);
+  }
+  if (!inserted) out.push(note);
+  return out;
+}
+
+function applyInversion(notes, inversionLabel) {
+  const order = ["root", "1st", "2nd", "3rd", "4th"];
+  const steps = Math.max(0, order.indexOf(String(inversionLabel)));
+  let res = sortByMidi(notes);
+  for (let i = 0; i < steps; i++) {
+    if (!res.length) break;
+    const lowest = res.shift();
+    const raised = raiseOct(lowest, 1);
+    res = insertAscending(res, raised);
+  }
+  return sortByMidi(res);
+}
+
+function applyVoicing(notes, pattern) {
+  const n = notes.length;
+  if (n <= 1 || !pattern || pattern === "close") return sortByMidi(notes);
+  let out = [...notes];
+  switch (pattern) {
+    case "open": {
+      const evens = out.filter((_, i) => i % 2 === 0);
+      const oddsRaised = out
+        .filter((_, i) => i % 2 === 1)
+        .map((x) => raiseOct(x, 1));
+      out = [...evens, ...oddsRaised];
+      break;
+    }
+    case "drop2": {
+      if (n >= 2) {
+        const idx = n - 2; // second highest
+        out[idx] = lowerOct(out[idx], 1);
+      }
+      break;
+    }
+    case "drop3": {
+      if (n >= 3) {
+        const idx = n - 3; // third highest
+        out[idx] = lowerOct(out[idx], 1);
+      }
+      break;
+    }
+    case "spread": {
+      const mid = Math.floor(n / 2);
+      out = out.map((x, i) => (i >= mid ? raiseOct(x, 1) : x));
+      break;
+    }
+    default:
+      break;
+  }
+  return sortByMidi(out);
+}
+
+function padChordSymbol(pad) {
+  if (!pad || pad.mode === "unassigned" || pad.assigned === false) return "";
+  if (pad.mode === "scale") {
+    const s = Array.isArray(globalScaleNotes.value)
+      ? globalScaleNotes.value
+      : [];
+    const deg = Math.max(1, parseInt(pad?.scale?.degree ?? "1", 10) || 1);
+    const i = (deg - 1) % (s.length || 7);
+    const rootPc = s[i] || "C";
+    const q = qualityForDegree(i);
+    const ext = pad?.scale?.extension || "triad";
+    return buildChordSymbolFromQuality(rootPc, q, ext);
+  } else if (pad.mode === "free") {
+    const rootPc = pad?.free?.root || "C";
+    const isMinor = (pad?.free?.type || "major") === "minor";
+    const ext = pad?.free?.extension || "triad";
+    return buildChordSymbol(rootPc, isMinor, ext);
+  }
+  return "";
+}
+
+function padBaseOctave(pad) {
+  if (!pad) return 4;
+  if (pad.mode === "scale") return Number(pad?.scale?.octave) || 4;
+  if (pad.mode === "free") return Number(pad?.free?.octave) || 4;
+  return 4;
+}
+
+function padNotes(pad) {
+  const symbol = padChordSymbol(pad);
+  if (!symbol) return [];
+  const pcs = Chord.get(symbol).notes || [];
+  const oct = padBaseOctave(pad);
+  if (!pcs.length) {
+    const rootPc = symbol.replace(/[^A-G#b].*$/, "");
+    return [`${rootPc}${oct}`];
+  }
+  // Base ascending stack
+  const base = pcsToAscending(pcs, oct);
+  const inv =
+    pad.mode === "scale" ? pad?.scale?.inversion : pad?.free?.inversion;
+  const voi = pad.mode === "scale" ? pad?.scale?.voicing : pad?.free?.voicing;
+  const afterInv = applyInversion(base, inv || "root");
+  const afterVoicing = applyVoicing(afterInv, voi || "close");
+  return sortByMidi(afterVoicing);
 }
 
 function padButtonLabelHtml(pad) {
-  return padButtonLabel(pad);
+  const s = padChordSymbol(pad);
+  return s || "UNASSIGNED";
 }
 
-function logMsg(msg) {
-  log.value.push(`[${new Date().toLocaleTimeString()}] ${msg}`);
-  if (log.value.length > 100) log.value.shift();
-}
+import { reactive } from "vue";
+const activePadNotes = reactive({});
 
-async function connectMidiAndMaybeOpenDialog() {
-  clearVisualDisplay();
-  await connectMidi();
+function onStartPad(idx) {
   try {
-    if (!hasValidSavedMidiSettings()) openMidiDialog();
-  } catch {}
-}
-
-function startPad(idx, e) {
-  if (activePads.value[idx]) return;
-  const padOrig = pads.value[idx];
-  if (!padOrig || padOrig.mode === "unassigned" || padOrig.assigned === false)
-    return;
-  const info = buildPadInfo(padOrig);
-  if (!info || !info.notes.length) return;
-  const sel = getSelectedChannel();
-  try {
-    e?.target?.setPointerCapture?.(e.pointerId);
-  } catch {}
-  if (sel) {
-    const channel = sel.output?.channels?.[sel.chNum];
-    if (channel) {
-      info.notes.forEach((note) => channel.sendNoteOn(note));
+    const pad = pads.value?.[idx];
+    const notes = padNotes(pad);
+    if (!notes.length) return;
+    const sel = getSelectedChannel();
+    const ch = sel?.ch;
+    if (!ch) return;
+    activePadNotes[idx] = notes.slice();
+    try {
+      ch.playNote(notes);
+    } catch {
+      for (const n of notes) {
+        try {
+          ch.playNote(n);
+        } catch {}
+      }
     }
-  }
-  activePads.value[idx] = {
-    ...info,
-    outputId: sel ? sel.output.id : null,
-    channel: sel ? sel.chNum : null,
-  };
-  stickyNotes.value = info.displayNotes;
-  stickyLabel.value = info.label;
-  lastActiveIdx.value = idx;
-  refreshActiveKeys();
-  syncNowPlayingFromActivePads();
-  const midiInfo = sel ? ` on ${sel.output.name} ch${sel.chNum}` : " (no MIDI)";
-  const notesText = info.displayNotes.length
-    ? ` — ${info.displayNotes.join(" ")}`
-    : "";
-  logMsg(`Start ${idx + 1}: ${info.label}${midiInfo}${notesText}`);
-}
-
-function stopPad(idx, e) {
-  const active = activePads.value[idx];
-  if (!active) return;
-  try {
-    e?.target?.releasePointerCapture?.(e.pointerId);
   } catch {}
-  if (active.outputId && active.channel != null) {
-    const output = WebMidi.outputs.find((o) => o.id === active.outputId);
-    const ch = output?.channels?.[active.channel];
-    if (ch) {
-      for (const note of active.notes || []) ch.sendNoteOff(note);
-    }
-  }
-  delete activePads.value[idx];
-  refreshActiveKeys();
-  syncNowPlayingFromActivePads();
-  logMsg(`Stop  ${idx + 1}: ${active.label}`);
 }
 
-function startPreview(e) {
-  if (previewActive.value) return;
-  const info = buildPadInfo(editModel.value);
-  if (!info || !info.notes.length) return;
-  const sel = getSelectedChannel();
+function onStopPad(idx) {
   try {
-    e?.target?.setPointerCapture?.(e.pointerId);
-  } catch {}
-  if (sel) {
-    const channel = sel.output?.channels?.[sel.chNum];
-    if (channel) {
-      info.notes.forEach((note) => channel.sendNoteOn(note));
+    const notes = activePadNotes[idx] || [];
+    if (!notes.length) return;
+    const sel = getSelectedChannel();
+    const ch = sel?.ch;
+    if (!ch) return;
+    try {
+      ch.stopNote(notes);
+    } catch {
+      for (const n of notes) {
+        try {
+          ch.stopNote(n);
+        } catch {}
+      }
     }
+  } catch {
+  } finally {
+    activePadNotes[idx] = [];
   }
-  previewActive.value = {
-    ...info,
-    outputId: sel ? sel.output.id : null,
-    channel: sel ? sel.chNum : null,
-  };
-  setActiveKeys(info.cssKeys);
-  nowPlaying.value = formatNowPlaying(info.label, info.displayNotes);
-  logMsg("Preview start");
 }
+// Preview MIDI handling
+const activePreviewNotes = ref([]);
 
-function stopPreview(e) {
-  const active = previewActive.value;
-  if (!active) return;
+function onPreviewStart(payload) {
   try {
-    e?.target?.releasePointerCapture?.(e.pointerId);
-  } catch {}
-  if (active.outputId && active.channel != null) {
-    const output = WebMidi.outputs.find((o) => o.id === active.outputId);
-    const ch = output?.channels?.[active.channel];
-    if (ch) {
-      for (const note of active.notes || []) ch.sendNoteOff(note);
+    const notes = Array.isArray(payload?.notes) ? payload.notes : [];
+    if (!notes.length) return;
+    const sel = getSelectedChannel();
+    const ch = sel?.ch;
+    if (!ch) return;
+    activePreviewNotes.value = notes.slice();
+    try {
+      ch.playNote(notes);
+    } catch {
+      for (const n of notes) {
+        try {
+          ch.playNote(n);
+        } catch {}
+      }
     }
-  }
-  previewActive.value = null;
-  refreshActiveKeys();
-  syncNowPlayingFromActivePads();
-  logMsg("Preview stop");
+  } catch {}
 }
 
-function onVisibilityChange() {
-  if (document.visibilityState !== "visible") stopAllActive();
+function onPreviewStop() {
+  try {
+    if (!activePreviewNotes.value.length) return;
+    const sel = getSelectedChannel();
+    const ch = sel?.ch;
+    if (!ch) return;
+    try {
+      ch.stopNote(activePreviewNotes.value);
+    } catch {
+      for (const n of activePreviewNotes.value) {
+        try {
+          ch.stopNote(n);
+        } catch {}
+      }
+    }
+  } catch {
+  } finally {
+    activePreviewNotes.value = [];
+  }
 }
+
+// pcToKeyToken imported from ./utils/music
+
+// Currently playing note names (with octaves) from pads only.
+// Do NOT include preview notes in the top keyboard.
+const activeNoteNames = computed(() => {
+  return Object.values(activePadNotes).flatMap((arr) =>
+    Array.isArray(arr) ? arr : []
+  );
+});
+
+// Active keys as a Set of lowercase pitch-class tokens for Keyboard.vue
+const activeKeySet = computed(() => {
+  const set = new Set();
+  for (const n of activeNoteNames.value) {
+    const info = Note.get(n);
+    const token = pcToKeyToken(info?.pc);
+    if (token) set.add(token);
+  }
+  return set;
+});
+
+// Human-friendly now playing line
+const nowPlayingHtml = computed(() => {
+  const notes = activeNoteNames.value.slice();
+  if (!notes.length) return "";
+  // Sort ascending by MIDI for readability
+  notes.sort((a, b) => (Note.midi(a) ?? 0) - (Note.midi(b) ?? 0));
+  return notes.join(" ");
+});
 </script>
