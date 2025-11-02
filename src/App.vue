@@ -6,21 +6,24 @@
     />
     <div class="midi-status-container">
       <button
-        class="button md"
-        :class="midiEnabled && outputs.length > 0 ? 'valid' : 'warning'"
+        class="icon midi"
+        :class="midiEnabled && outputs.length > 0 ? '' : 'warning'"
         type="button"
         @click="openMidiDialog"
         :disabled="!midiSupported"
         :title="!midiSupported ? 'Your browser does not support Web MIDI' : ''"
       >
-        MIDI
+        <!--MIDI-->
+        <!--<Cable aria-hidden="true" :size="21" stroke-width="1.5" /> -->
+        <Icon
+          :iconNode="Midi"
+          aria-hidden="true"
+          :size="21"
+          stroke-width="1.75"
+        />
       </button>
-      <button
-        class="button md icon scale"
-        type="button"
-        @click="openGlobalKeyDialog"
-      >
-        <Music2 aria-hidden="true" :size="14" stroke-width="2" />
+      <button class="icon scale" type="button" @click="openGlobalKeyDialog">
+        <Music2 aria-hidden="true" :size="21" stroke-width="1.75" />
       </button>
     </div>
   </div>
@@ -89,7 +92,104 @@ import {
   nextTick,
 } from "vue";
 import { WebMidi } from "webmidi";
-import { Music2 } from "lucide-vue-next";
+import { Music2, Cable, CircleEllipsis, Circle } from "lucide-vue-next";
+import { Icon } from "lucide-vue-next";
+
+// Icon data for FoobarIcon (no export needed in <script setup>)
+const Midi = [
+  [
+    "path",
+    {
+      d: "M12 18h.01",
+      key: "mhygvu",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M16.24 16.24h.01",
+      key: "1x84wr",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M18 12h.01",
+      key: "yjnet6",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M6 12h.01",
+      key: "c2rlol",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M7.76 16.24h.01",
+      key: "11ncrc",
+    },
+  ],
+  [
+    "circle",
+    {
+      cx: "12",
+      cy: "12",
+      r: "10",
+      key: "1mglay",
+    },
+  ],
+];
+
+const Midi2 = [
+  [
+    "path",
+    {
+      d: "M12 17h.01",
+      key: "p32p05",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M15.5 15.5h.01",
+      key: "14q5rk",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M17 12h.01",
+      key: "1m0b6t",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M7 12h.01",
+      key: "eqddd0",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M8.5 15.5h.01",
+      key: "pctjho",
+    },
+  ],
+  [
+    "circle",
+    {
+      cx: "12",
+      cy: "12",
+      r: "10",
+      key: "1mglay",
+    },
+  ],
+];
+
 import Keyboard from "./components/Keyboard.vue";
 import PadGrid from "./components/PadGrid.vue";
 import EditDialog from "./components/EditDialog.vue";

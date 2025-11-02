@@ -74,19 +74,19 @@ const dlg = ref(null);
 const scaleLocal = ref(props.modelScale);
 const typeLocal = ref(props.modelType);
 
-// Scale options from tonal.js
+// Scale options: display both sharp and flat names for black keys
 const scaleRoots = computed(() => [
   { value: "C", label: "C" },
-  { value: "C#", label: "C#" },
+  { value: "Db", label: "C#/Db" },
   { value: "D", label: "D" },
-  { value: "Eb", label: "Eb" },
+  { value: "Eb", label: "D#/Eb" },
   { value: "E", label: "E" },
   { value: "F", label: "F" },
-  { value: "F#", label: "F#" },
+  { value: "Gb", label: "F#/Gb" },
   { value: "G", label: "G" },
-  { value: "Ab", label: "Ab" },
+  { value: "Ab", label: "G#/Ab" },
   { value: "A", label: "A" },
-  { value: "Bb", label: "Bb" },
+  { value: "Bb", label: "A#/Bb" },
   { value: "B", label: "B" },
 ]);
 

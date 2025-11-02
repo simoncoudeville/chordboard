@@ -69,7 +69,7 @@
           <div class="dialog-content">
             <button
               type="button"
-              class="button block large valid"
+              class="button block large"
               @click="$emit('request-connect')"
             >
               Connect MIDI

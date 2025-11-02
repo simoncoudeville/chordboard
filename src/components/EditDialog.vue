@@ -12,7 +12,7 @@
           <X
             class="dialog-close-icon"
             aria-hidden="true"
-            :size="14"
+            :size="21"
             stroke-width="2"
           />
 
@@ -299,7 +299,8 @@ const editChordOptions = computed(() =>
     };
   })
 );
-// Root options for Free mode, generated via Tonal. We prefer flats to match UI/keyboard.
+// Root options for Free mode, generated via Tonal.
+// Display both sharp and flat names for black keys.
 const ROOT_PCS_SHARP = [
   "C",
   "C#",
@@ -315,11 +316,14 @@ const ROOT_PCS_SHARP = [
   "B",
 ];
 const rootOptions = computed(() => {
-  // Prefer flats everywhere for consistency with keyboard tokens
-  const pcs = ROOT_PCS_SHARP.map((pc) =>
-    pc.includes("#") ? Note.enharmonic(pc) : pc
-  );
-  return pcs.map((name) => ({ value: String(name), label: String(name) }));
+  return ROOT_PCS_SHARP.map((pc) => {
+    if (pc.includes("#")) {
+      const flat = Note.enharmonic(pc);
+      // Display both: "C#/Db"
+      return { value: flat, label: `${pc}/${flat}` };
+    }
+    return { value: pc, label: pc };
+  });
 });
 const extensionOptions = ["triad", "7", "maj7", "9", "add9", "sus2", "sus4"];
 // Inversions to apply on the base ascending stack

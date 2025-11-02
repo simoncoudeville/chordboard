@@ -130,6 +130,10 @@ button {
   }
 }
 
+.icon {
+  padding: var(--space-0-5);
+}
+
 .button.icon {
   width: var(--space-4);
   aspect-ratio: 1;
@@ -138,6 +142,10 @@ button {
   justify-content: center;
   text-align: center;
   padding: 0;
+}
+
+.button.midi {
+  padding: 0 var(--space-1);
 }
 
 .button.block {
@@ -154,7 +162,7 @@ button {
 .button.scale {
   /* background-color: var(--color-scale);
   color: var(--color-layer-0); */
-  color: var(--color-scale);
+  /* color: var(--color-scale); */
 }
 
 .button.md {
@@ -275,7 +283,8 @@ dialog:open {
 .midi-status-container {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-0-5);
+  /* margin-right: calc(var(--space-0-5) * -1); */
 }
 
 .midi-status-symbol {
