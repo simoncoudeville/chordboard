@@ -166,7 +166,7 @@
         <button
           type="button"
           @click="$emit('save', buildPadSnapshot())"
-          :disabled="!isEditDirty"
+          :disabled="!isDirty"
         >
           Save
         </button>
@@ -185,7 +185,6 @@ import { Scale, Chord, Note } from "@tonaljs/tonal";
 // Keep padIndex so the title continues to work; expose open/close for parent
 const props = defineProps({
   padIndex: { type: Number, default: 0 },
-  isEditDirty: { type: Boolean, default: false },
   // Receive current global scale from parent (App.vue)
   globalScale: { type: String, default: "" },
   globalScaleType: { type: String, default: "" },
@@ -633,4 +632,50 @@ watch(
   (s) => applyPadState(s),
   { immediate: true, deep: false }
 );
+
+// Internal dirtiness check: compare current selections with incoming padState
+const isDirty = computed(() => {
+  const s = props.padState || {};
+  const current = {
+    mode: model.value.mode,
+    scale: {
+      degree: String(stateScale.degree),
+      octave: Number(stateScale.octave),
+      extension: String(stateScale.extension),
+      inversion: String(stateScale.inversion),
+      voicing: String(stateScale.voicing),
+    },
+    free: {
+      root: String(stateFree.root),
+      type: String(stateFree.type),
+      octave: Number(stateFree.octave),
+      extension: String(stateFree.extension),
+      inversion: String(stateFree.inversion),
+      voicing: String(stateFree.voicing),
+    },
+  };
+  const base = {
+    mode: s.mode ?? "scale",
+    scale: {
+      degree: String(s?.scale?.degree ?? "1"),
+      octave: Number(s?.scale?.octave ?? 4),
+      extension: String(s?.scale?.extension ?? "triad"),
+      inversion: String(s?.scale?.inversion ?? "root"),
+      voicing: String(s?.scale?.voicing ?? "close"),
+    },
+    free: {
+      root: String(s?.free?.root ?? "C"),
+      type: String(s?.free?.type ?? "major"),
+      octave: Number(s?.free?.octave ?? 4),
+      extension: String(s?.free?.extension ?? "triad"),
+      inversion: String(s?.free?.inversion ?? "root"),
+      voicing: String(s?.free?.voicing ?? "close"),
+    },
+  };
+  try {
+    return JSON.stringify(current) !== JSON.stringify(base);
+  } catch {
+    return true;
+  }
+});
 </script>

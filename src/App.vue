@@ -46,7 +46,6 @@
     :global-scale-type="globalScaleType"
     :permission-allowed="permissionAllowed"
     :midi-enabled="midiEnabled"
-    :is-edit-dirty="true"
     @preview-start="onPreviewStart"
     @preview-stop="onPreviewStop"
     @save="saveEdit"
