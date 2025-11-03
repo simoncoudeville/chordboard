@@ -19,11 +19,10 @@
           <span class="sr-only">Close</span>
         </button>
       </div>
-
       <!-- State machine per design -->
       <template v-if="!midiSupported">
         <div class="dialog-content">
-          <h3 class="color-warning">Web MIDI not supported</h3>
+          <p class="color-warning">Web MIDI not supported</p>
           <p>Your browser doesn’t support Web MIDI. Try Chrome or Edge.</p>
         </div>
       </template>
@@ -31,7 +30,7 @@
         <!-- 1) Permission required -->
         <template v-if="permissionOnly && permission !== 'denied'">
           <div class="dialog-content">
-            <h3 class="color-warning">MIDI permission required</h3>
+            <p class="color-warning">MIDI permission required</p>
             <p>
               To use external MIDI devices, allow access when your browser
               prompts you.
@@ -51,7 +50,7 @@
         <!-- 1.1) Permission denied -->
         <template v-else-if="permissionOnly && permission === 'denied'">
           <div class="dialog-content">
-            <h3 class="color-warning">MIDI denied</h3>
+            <p class="color-warning">MIDI denied</p>
             <p>
               MIDI permission was blocked. To grant access again, change this
               site's MIDI permission in your browser settings, then reopen this
@@ -63,7 +62,7 @@
         <!-- 1.2) Permission granted but not connected yet -->
         <template v-else-if="permission === 'granted' && !midiEnabled">
           <div class="dialog-content">
-            <h3 class="color-valid">MIDI allowed</h3>
+            <p class="color-valid">MIDI allowed</p>
             <p>Connect MIDI to continue.</p>
           </div>
           <div class="dialog-content">
@@ -80,7 +79,7 @@
         <!-- 2) Connected but no devices detected -->
         <template v-else-if="midiEnabled && outputs.length === 0">
           <div class="dialog-content">
-            <h3 class="color-warning">No MIDI devices detected</h3>
+            <p class="color-warning">No MIDI devices detected</p>
             <p>Check your MIDI device and try scanning for devices.</p>
           </div>
           <div class="dialog-content">
@@ -128,7 +127,7 @@
         <!-- 3) Connected with devices -->
         <template v-else>
           <div class="dialog-content">
-            <h3 class="color-valid">MIDI connected</h3>
+            <p class="color-valid">MIDI connected</p>
             <p>Your MIDI device is connected and ready to use.</p>
           </div>
           <div class="dialog-content">

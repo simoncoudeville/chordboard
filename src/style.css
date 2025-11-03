@@ -1,3 +1,12 @@
+@font-face {
+  font-family: IBMPlexSansVar;
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 85% 100%;
+  font-display: swap;
+  src: url("./assets/fonts/IBM Plex Sans Var-Roman.woff2") format("woff2");
+}
+
 :root {
   /* lightdark */
   color-scheme: dark;
@@ -5,9 +14,10 @@
   --radius: 2px;
 
   --font-size: 13;
-  --font-size-sm: 13;
+  --font-size-sm: calc(12 / var(--font-size) * 1rem);
+  --font-weight-strong: 500;
   --line-height: 21;
-  --computed-line-height: calc(var(--line-height) / var(--font-size));
+  --computed-line-height: calc(var(--line-height) / var(--font-size) * 1rem);
 
   --space-unit: calc(7 / var(--font-size) * 1rem);
   --space-0-5: calc(var(--space-unit) * 0.5);
@@ -48,7 +58,8 @@
 }
 
 html {
-  font-family: "InterVariable", sans-serif;
+  /* font-family: "InterVariable", sans-serif; */
+  font-family: "IBMPlexSansVar", sans-serif;
   font-size: calc(var(--font-size) / 16 * 100%);
   line-height: var(--computed-line-height);
   background-color: var(--color-layer-0);
@@ -67,16 +78,23 @@ html {
 svg {
   display: block;
   height: auto;
+  stroke-width: 1.5;
 }
 
 h2,
 h3 {
+  text-transform: uppercase;
   font-size: 1rem;
-  font-weight: 500;
+  /* font-size: var(--font-size-sm); */
+  font-weight: var(--font-weight-strong);
+  font-stretch: 85%;
 }
 
 label {
-  font-weight: 500;
+  /* font-size: var(--font-size-sm); */
+  font-weight: var(--font-weight-strong);
+  font-stretch: 85%;
+  text-transform: uppercase;
 }
 
 .label-text {
@@ -94,6 +112,9 @@ select {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   font: inherit;
+  font-weight: normal;
+  font-size: 1rem;
+  font-stretch: 100%;
   line-height: inherit;
   /* appearance: none; */
   /* padding: 0; */
@@ -109,7 +130,10 @@ button {
   border: none;
   padding: 0;
   font: inherit;
-  font-weight: 500;
+  /* font-size: var(--font-size-sm); */
+  font-weight: var(--font-weight-strong);
+  font-stretch: 85%;
+  text-transform: uppercase;
   -webkit-tap-highlight-color: transparent; /* remove iOS/Android tap highlight */
 
   &:disabled {
@@ -292,7 +316,7 @@ dialog:open {
 }
 
 .pads {
-  --pad-min: 109px;
+  --pad-min: 130px;
   padding: 0 1px 1px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(var(--pad-min), 1fr));
@@ -347,13 +371,15 @@ dialog:open {
   color: var(--color-text);
   border-radius: var(--radius);
   text-align: left;
+  text-transform: none;
+  font-weight: normal;
+  font-size: 1rem;
   padding: var(--space-1);
   min-height: calc(var(--space-5) * 1.5);
   display: flex;
   align-items: start;
   grid-column: 1 / -1;
   grid-row: 1 / -1;
-  color: var(--color-text);
 
   &:active {
     background-color: var(--color-text);
@@ -532,7 +558,7 @@ dialog:open {
 
 .toggle-button {
   color: var(--color-layer-0);
-  font-weight: 500;
+  font-weight: var();
   padding: var(--space-1) var(--space-2);
   flex-basis: 50%;
   text-align: center;
