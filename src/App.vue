@@ -45,9 +45,14 @@
     @stop-pad="onStopPad"
     @edit="openEditDialog"
   />
-  <div v-if="!midiSupported" class="warning">
-    <p>Warning: Your browser does not support Web MIDI.</p>
-  </div>
+  <button
+    v-if="showMidiWarningButton"
+    class="button-warning"
+    type="button"
+    @click="openMidiDialog"
+  >
+    {{ midiWarningLabel }}
+  </button>
 
   <EditDialog
     ref="editDialogRef"
@@ -93,14 +98,7 @@
 </template>
 
 <script setup>
-import {
-  ref,
-  computed,
-  onMounted,
-  onBeforeUnmount,
-  watch,
-  nextTick,
-} from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { WebMidi } from "webmidi";
 import { Music2, Cable, CircleEllipsis, Circle } from "lucide-vue-next";
 import { Icon } from "lucide-vue-next";
@@ -246,10 +244,12 @@ const isMidiDirty = computed(() => {
   if (!Array.isArray(list) || list.length === 0) return false;
   const id = midiModelOutputId.value;
   const ch = Number(midiModelOutCh.value);
-  const idExists = list.some((o) => o.id === id);
+  const idExists = list.some((o) => String(o?.id) === String(id));
   const chValid = ch >= 1 && ch <= 16;
   if (!idExists || !chValid) return false;
-  return selectedOutputId.value !== id || Number(selectedOutCh.value) !== ch;
+  const currentId = selectedOutputId.value;
+  const currentCh = Number(selectedOutCh.value);
+  return String(currentId) !== String(id) || currentCh !== ch;
 });
 
 // Global scale state
@@ -450,12 +450,6 @@ onMounted(() => {
   updatePermissionStatus();
   loadGlobalScaleSettings();
   loadPads();
-
-  nextTick(() => {
-    try {
-      midiDialogRef.value?.open?.();
-    } catch {}
-  });
 });
 
 onBeforeUnmount(() => {
@@ -472,6 +466,25 @@ const statusDisplay = computed(() => {
   if (permission.value === "prompt") return "MIDI permission required";
   if (permission.value === "denied") return "MIDI denied";
   return status.value || "MIDI not connected";
+});
+
+const hasMidiOutputs = computed(
+  () => Array.isArray(outputs.value) && outputs.value.length > 0
+);
+
+const showMidiWarningButton = computed(() => {
+  if (!midiSupported.value) return true;
+  if (!midiEnabled.value) return true;
+  return !hasMidiOutputs.value;
+});
+
+const midiWarningLabel = computed(() => {
+  if (!midiSupported.value)
+    return "Warning: Your browser does not support Web MIDI.";
+  if (!midiEnabled.value) return "Warning: MIDI is not enabled.";
+  if (!hasMidiOutputs.value) return "Warning: No MIDI devices detected.";
+  const text = statusDisplay.value || "";
+  return text ? `Warning: ${text}` : "Warning: MIDI configuration issue.";
 });
 
 // Count scale-mode pads for inline warning in GlobalKeyDialog

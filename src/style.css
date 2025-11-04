@@ -79,7 +79,7 @@ html {
 }
 
 #app {
-  min-height: 100dvh;
+  min-height: 100svh;
   display: grid;
   grid-template-rows: auto 1fr;
 }
@@ -203,6 +203,13 @@ button {
   /* background-color: var(--color-scale);
   color: var(--color-layer-0); */
   /* color: var(--color-scale); */
+}
+
+.button-warning {
+  /* background-color: var(--color-warning); */
+  /* color: var(--color-layer-0); */
+  color: var(--color-warning);
+  padding-bottom: var(--space-0-5);
 }
 
 .button.md {
