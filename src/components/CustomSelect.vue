@@ -20,8 +20,9 @@
     <ChevronsUpDown
       class="custom-select-icon"
       aria-hidden="true"
-      :size="iconSize"
-      :stroke-width="iconStrokeWidth"
+      :stroke-width="1.5"
+      :size="16"
+      :absoluteStrokeWidth="true"
     />
   </span>
 </template>
@@ -36,8 +37,6 @@ const props = defineProps({
   optionValueKey: { type: String, default: "value" },
   optionLabelKey: { type: String, default: "label" },
   castNumber: { type: Boolean, default: false },
-  iconSize: { type: Number, default: 14 },
-  iconStrokeWidth: { type: Number, default: 2 },
   wrapperClass: { type: [String, Object, Array], default: "" },
 });
 

@@ -12,8 +12,9 @@
           <X
             class="dialog-close-icon"
             aria-hidden="true"
-            :size="14"
-            stroke-width="2"
+            :stroke-width="1.5"
+            :size="16"
+            :absoluteStrokeWidth="true"
           />
 
           <span class="sr-only">Close</span>
@@ -23,7 +24,9 @@
       <template v-if="!midiSupported">
         <div class="dialog-content">
           <p class="color-warning">Web MIDI not supported</p>
-          <p>Your browser doesn’t support Web MIDI. Try Chrome or Edge.</p>
+          <p class="color-meta">
+            Your browser doesn’t support Web MIDI. Try Chrome or Edge.
+          </p>
         </div>
       </template>
       <template v-else>
@@ -31,7 +34,7 @@
         <template v-if="permissionOnly && permission !== 'denied'">
           <div class="dialog-content">
             <p class="color-warning">MIDI permission required</p>
-            <p>
+            <p class="color-meta">
               To use external MIDI devices, allow access when your browser
               prompts you.
             </p>
@@ -51,7 +54,7 @@
         <template v-else-if="permissionOnly && permission === 'denied'">
           <div class="dialog-content">
             <p class="color-warning">MIDI denied</p>
-            <p>
+            <p class="color-meta">
               MIDI permission was blocked. To grant access again, change this
               site's MIDI permission in your browser settings, then reopen this
               dialog.
@@ -63,7 +66,7 @@
         <template v-else-if="permission === 'granted' && !midiEnabled">
           <div class="dialog-content">
             <p class="color-valid">MIDI allowed</p>
-            <p>Connect MIDI to continue.</p>
+            <p class="color-meta">Enable MIDI to continue.</p>
           </div>
           <div class="dialog-content">
             <button
@@ -71,7 +74,7 @@
               class="button block large"
               @click="$emit('request-connect')"
             >
-              Connect MIDI
+              Enable MIDI
             </button>
           </div>
         </template>
@@ -80,7 +83,9 @@
         <template v-else-if="midiEnabled && outputs.length === 0">
           <div class="dialog-content">
             <p class="color-warning">No MIDI devices detected</p>
-            <p>Check your MIDI device and try scanning for devices.</p>
+            <p class="color-meta">
+              Check your MIDI device and try scanning for devices.
+            </p>
           </div>
           <div class="dialog-content">
             <button
@@ -128,7 +133,9 @@
         <template v-else>
           <div class="dialog-content">
             <p class="color-valid">MIDI connected</p>
-            <p>Your MIDI device is connected and ready to use.</p>
+            <p class="color-meta">
+              Your MIDI device is connected and ready to use.
+            </p>
           </div>
           <div class="dialog-content">
             <button

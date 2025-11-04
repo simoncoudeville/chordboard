@@ -2,7 +2,7 @@
   <dialog ref="dlg" @click.self="onClose" @cancel.prevent="onClose">
     <form class="dialog-body" method="dialog" @submit.prevent>
       <div class="dialog-top">
-        <h2 class="dialog-title">Edit Pad {{ padIndex + 1 }}</h2>
+        <h2 class="dialog-title">Pad {{ padIndex + 1 }}</h2>
         <button
           type="button"
           class="dialog-close"
@@ -12,8 +12,9 @@
           <X
             class="dialog-close-icon"
             aria-hidden="true"
-            :size="21"
-            stroke-width="2"
+            :stroke-width="1.5"
+            :size="16"
+            :absoluteStrokeWidth="true"
           />
 
           <span class="sr-only">Close</span>
@@ -137,9 +138,11 @@
         />
         <div class="chord-preview-output">
           <div class="chord-preview-symbol">
+            <span class="uppercase color-meta">Chord: </span>
             <span>{{ previewChordHtml }}</span>
           </div>
           <div class="chord-preview-notes">
+            <span class="uppercase color-meta">Notes: </span>
             <span>{{ previewNotesHtml }}</span>
           </div>
         </div>

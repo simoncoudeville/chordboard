@@ -6,24 +6,32 @@
     />
     <div class="midi-status-container">
       <button
-        class="icon midi"
+        class="icon-button midi"
         :class="midiEnabled && outputs.length > 0 ? '' : 'warning'"
         type="button"
         @click="openMidiDialog"
         :disabled="!midiSupported"
         :title="!midiSupported ? 'Your browser does not support Web MIDI' : ''"
       >
-        <!--MIDI-->
-        <!--<Cable aria-hidden="true" :size="21" stroke-width="1.5" /> -->
         <Icon
-          :iconNode="Midi"
           aria-hidden="true"
-          :size="21"
-          stroke-width="1.75"
+          :iconNode="Midi"
+          :stroke-width="1.5"
+          :size="20"
+          :absoluteStrokeWidth="true"
         />
       </button>
-      <button class="icon scale" type="button" @click="openGlobalKeyDialog">
-        <Music2 aria-hidden="true" :size="21" stroke-width="1.75" />
+      <button
+        class="icon-button scale"
+        type="button"
+        @click="openGlobalKeyDialog"
+      >
+        <Music2
+          aria-hidden="true"
+          :stroke-width="1.5"
+          :size="20"
+          :absoluteStrokeWidth="true"
+        />
       </button>
     </div>
   </div>
@@ -283,6 +291,7 @@ function saveGlobalScaleSettings() {
 }
 
 function openEditDialog(idx) {
+  clearVisualDisplay();
   currentPadIndex.value = idx;
   editDialogRef.value?.open?.();
 }
@@ -384,7 +393,7 @@ async function handleRequestConnect() {
 }
 
 function clearVisualDisplay() {
-  // Do nothing
+  lastPlayedNotes.value = [];
 }
 
 const PAD_COUNT = 15;
@@ -755,6 +764,7 @@ function onStartPad(idx) {
     const ch = sel?.ch;
     if (!ch) return;
     activePadNotes[idx] = notes.slice();
+    lastPlayedNotes.value = notes.slice(); // Remember last played chord
     try {
       ch.playNote(notes);
     } catch {
@@ -790,6 +800,8 @@ function onStopPad(idx) {
 }
 // Preview MIDI handling
 const activePreviewNotes = ref([]);
+// Track the last played chord to keep it visible on keyboard
+const lastPlayedNotes = ref([]);
 
 function onPreviewStart(payload) {
   try {
@@ -834,12 +846,17 @@ function onPreviewStop() {
 
 // pcToKeyToken imported from ./utils/music
 
-// Currently playing note names (with octaves) from pads only.
-// Do NOT include preview notes in the top keyboard.
+// Currently playing note names (with octaves) from pads.
+// When no pads are active, show the last played chord.
 const activeNoteNames = computed(() => {
-  return Object.values(activePadNotes).flatMap((arr) =>
+  const fromPads = Object.values(activePadNotes).flatMap((arr) =>
     Array.isArray(arr) ? arr : []
   );
+  // If no pads are currently playing, show the last played chord
+  if (fromPads.length === 0 && lastPlayedNotes.value.length > 0) {
+    return lastPlayedNotes.value;
+  }
+  return fromPads;
 });
 
 // Active keys as a Set of lowercase pitch-class tokens for Keyboard.vue

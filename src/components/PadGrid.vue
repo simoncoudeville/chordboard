@@ -31,8 +31,9 @@
           <Repeat
             class="pad-edit-icon"
             aria-hidden="true"
-            :size="14"
-            stroke-width="2"
+            :stroke-width="1.5"
+            :size="16"
+            :absoluteStrokeWidth="true"
           />
           <span class="sr-only">Edit</span>
         </button>

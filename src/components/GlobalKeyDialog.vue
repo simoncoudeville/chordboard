@@ -12,14 +12,19 @@
           <X
             class="dialog-close-icon"
             aria-hidden="true"
-            :size="14"
-            stroke-width="1.25"
+            :stroke-width="1.5"
+            :size="16"
+            :absoluteStrokeWidth="true"
           />
 
           <span class="sr-only">Close</span>
         </button>
       </div>
-
+      <div class="dialog-content">
+        <p class="color-meta">
+          Set the global scale for all pads in Scale mode.
+        </p>
+      </div>
       <div class="dialog-content edit-grid">
         <label>
           <span class="label-text">Root</span>

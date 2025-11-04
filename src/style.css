@@ -13,25 +13,29 @@
 
   --radius: 2px;
 
-  --font-size: 13;
+  --font-size: 12;
   --font-size-sm: calc(12 / var(--font-size) * 1rem);
   --font-weight-strong: 500;
-  --line-height: 21;
+  --line-height: 20;
   --computed-line-height: calc(var(--line-height) / var(--font-size) * 1rem);
 
-  --space-unit: calc(7 / var(--font-size) * 1rem);
+  --space-unit: calc(8 / var(--font-size) * 1rem);
   --space-0-5: calc(var(--space-unit) * 0.5);
   --space-1: var(--space-unit);
   --space-1-5: calc(var(--space-unit) * 1.5);
   --space-2: calc(var(--space-unit) * 2);
+  --space-2-5: calc(var(--space-unit) * 2.5);
   --space-3: calc(var(--space-unit) * 3);
+  --space-3-5: calc(var(--space-unit) * 3.5);
   --space-4: calc(var(--space-unit) * 4);
+  --space-4-5: calc(var(--space-unit) * 4.5);
   --space-5: calc(var(--space-unit) * 5);
+  --space-5-5: calc(var(--space-unit) * 5.5);
   /* Responsive pad sizing */
   --pad-min: 109px;
 
   /* Figma colors — selected frame */
-  --color-gray-100: #1a1a1a;
+  --color-gray-100: #0d0d0d;
   --color-gray-200: #333333;
   --color-gray-300: #4d4d4d;
   --color-gray-400: #999999;
@@ -48,7 +52,7 @@
   --color-layer-3: var(--color-gray-400);
   --color-text: var(--color-gray-500);
   --color-text-meta: var(--color-gray-400);
-  --color-border: var(--color-gray-300);
+  --color-border: var(--color-gray-200);
 }
 
 * {
@@ -59,7 +63,9 @@
 
 html {
   /* font-family: "InterVariable", sans-serif; */
-  font-family: "IBMPlexSansVar", sans-serif;
+  /* font-family: "IBMPlexSansVar", sans-serif; */
+  /* font-family: "IBM Plex Mono"; */
+  font-family: "Roboto mono";
   font-size: calc(var(--font-size) / 16 * 100%);
   line-height: var(--computed-line-height);
   background-color: var(--color-layer-0);
@@ -78,12 +84,13 @@ html {
 svg {
   display: block;
   height: auto;
-  stroke-width: 1.5;
+  /* stroke-width: 1.5; */
 }
 
 h2,
 h3 {
   text-transform: uppercase;
+  /* font-family: "IBMPlexSansVar", sans-serif; */
   font-size: 1rem;
   /* font-size: var(--font-size-sm); */
   font-weight: var(--font-weight-strong);
@@ -92,12 +99,13 @@ h3 {
 
 label {
   /* font-size: var(--font-size-sm); */
-  font-weight: var(--font-weight-strong);
-  font-stretch: 85%;
-  text-transform: uppercase;
 }
 
 .label-text {
+  font-weight: var(--font-weight-strong);
+  /* font-family: "IBMPlexSansVar", sans-serif; */
+  font-stretch: 85%;
+  text-transform: uppercase;
   display: inline-block;
   padding-right: var(--space-1);
   padding-bottom: var(--space-1);
@@ -108,7 +116,9 @@ select {
   width: 100%;
   /* background-color: var(--color-layer-1); */
   background-color: var(--color-layer-0);
-  color: var(--color-text);
+  /* color: var(--color-text); */
+  /* color: var(--color-text-meta); */
+  /* color: var(--color-text); */
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   font: inherit;
@@ -118,7 +128,7 @@ select {
   line-height: inherit;
   /* appearance: none; */
   /* padding: 0; */
-  height: var(--space-5);
+  height: var(--space-4-5);
   padding: 0 var(--space-0-5);
 }
 
@@ -131,6 +141,7 @@ button {
   padding: 0;
   font: inherit;
   /* font-size: var(--font-size-sm); */
+  /* font-family: "IBMPlexSansVar", sans-serif; */
   font-weight: var(--font-weight-strong);
   font-stretch: 85%;
   text-transform: uppercase;
@@ -149,23 +160,25 @@ button {
   color: var(--color-text);
 
   &:active {
-    background-color: var(--color-layer-2);
+    background-color: var(--color-layer-1);
     /* color: var(--color-layer-0); */
   }
 }
 
 .icon {
-  padding: var(--space-0-5);
+  width: var(--space-2-5);
+  stroke-width: 1.5;
 }
 
-.button.icon {
-  width: var(--space-4);
-  aspect-ratio: 1;
+.icon-button {
+  padding: var(--space-0-5);
+  /* width: var(--space-4); */
+  /* aspect-ratio: 1; */
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 0;
+  /* padding: 0; */
 }
 
 .button.midi {
@@ -217,7 +230,7 @@ dialog {
   max-height: 100%;
   margin: auto auto 0;
   border: none;
-  border-top: 1px solid var(--color-border);
+  /* border-top: 1px solid var(--color-layer-1); */
   border-radius: 0;
   opacity: 0;
   transform: translateY(calc(var(--space-2) * 1));
@@ -254,13 +267,13 @@ dialog:open {
 
 .dialog-body {
   display: grid;
-  gap: var(--space-3);
-  padding-bottom: var(--space-3);
+  gap: var(--space-2-5);
+  padding-bottom: var(--space-2-5);
 }
 
 .dialog-top {
   /* padding: var(--space-1) var(--space-1) var(--space-1) var(--space-2); */
-  padding: var(--space-2) var(--space-2) 0 var(--space-3);
+  padding: var(--space-2-5) var(--space-2-5) 0 var(--space-2-5);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -269,19 +282,21 @@ dialog:open {
 
 .dialog-close {
   padding: var(--space-1);
+  margin-top: calc(var(--space-1) * -1);
+  margin-bottom: calc(var(--space-1) * -1);
+  margin-right: calc(var(--space-1) * -1);
 }
 
 .dialog-close-icon {
-  width: var(--space-2);
-  stroke-width: 2;
+  stroke: var(--color-layer-3);
 }
 
 .dialog-content {
-  padding: 0 var(--space-3);
+  padding: 0 var(--space-2-5);
 }
 
 .dialog-buttons {
-  padding: 0 var(--space-3);
+  padding: 0 var(--space-2-5);
   display: flex;
   justify-content: flex-end;
   margin-top: calc(var(--space-1) * -1);
@@ -295,7 +310,7 @@ dialog:open {
   align-items: center;
   gap: var(--space-2);
   justify-content: space-between;
-  padding: var(--space-1);
+  padding: var(--space-1-5);
 }
 
 .top-left {
@@ -307,8 +322,8 @@ dialog:open {
 .midi-status-container {
   display: flex;
   align-items: center;
-  gap: var(--space-0-5);
-  /* margin-right: calc(var(--space-0-5) * -1); */
+  gap: var(--space-1);
+  /* margin-right: calc(var(--space-1) * -1); */
 }
 
 .midi-status-symbol {
@@ -317,10 +332,10 @@ dialog:open {
 
 .pads {
   --pad-min: 130px;
-  padding: 0 1px 1px;
+  padding: 0 var(--space-0-5) var(--space-0-5);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(var(--pad-min), 1fr));
-  gap: 1px;
+  gap: var(--space-0-5);
 }
 
 .pad {
@@ -372,6 +387,8 @@ dialog:open {
   border-radius: var(--radius);
   text-align: left;
   text-transform: none;
+  /* font-family: "IBM Plex Mono", sans-serif; */
+  font-stretch: 100%;
   font-weight: normal;
   font-size: 1rem;
   padding: var(--space-1);
@@ -383,7 +400,7 @@ dialog:open {
 
   &:active {
     background-color: var(--color-text);
-    color: var(--color-layer-1);
+    color: var(--color-layer-0);
   }
 
   &:disabled,
@@ -416,6 +433,12 @@ dialog:open {
   --gap: 1px; /* spacing between white keys */
   border-radius: var(--radius);
   overflow: hidden;
+}
+
+.keyboard-extended {
+  --key-h: calc(36 / var(--font-size) * 1rem); /* taller white key height */
+  --black-h: calc(24 / var(--font-size) * 1rem); /* taller black key height */
+  /* overflow: auto; */
 }
 
 .keyboard-octaves {
@@ -515,7 +538,7 @@ dialog:open {
 .edit-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: var(--space-3);
+  gap: var(--space-2) var(--space-2-5);
   align-items: center;
 }
 
@@ -532,7 +555,7 @@ dialog:open {
 
 .chord-preview {
   display: grid;
-  gap: var(--space-1-5);
+  gap: var(--space-2);
 }
 
 .sr-only {
@@ -551,14 +574,18 @@ dialog:open {
   gap: 1px;
   /* gap: var(--space-1); */
   /* margin-left: calc(var(--space-1) * -1); */
-  background-color: var(--color-layer-2);
+  /* background-color: var(--color-layer-2); */
+  border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 1px;
+  /* padding: 1px; */
 }
 
 .toggle-button {
-  color: var(--color-layer-0);
-  font-weight: var();
+  color: var(--color-text-meta);
+  text-transform: uppercase;
+  /* font-family: "IBMPlexSansVar", sans-serif; */
+  font-stretch: 85%;
+  font-weight: var(--font-weight-strong);
   padding: var(--space-1) var(--space-2);
   flex-basis: 50%;
   text-align: center;
@@ -567,7 +594,7 @@ dialog:open {
 
   &:has(.toggle-button-input:checked) {
     color: var(--color-text);
-    background-color: var(--color-layer-0);
+    background-color: var(--color-border);
   }
 }
 
@@ -599,8 +626,18 @@ dialog:open {
   }
 }
 
+.custom-select-icon {
+  stroke: var(--color-border);
+  stroke: var(--color-layer-2);
+  /* width: var(--space-2); */
+}
+
 .flex-grow-1 {
   flex-grow: 1;
+}
+
+.color-meta {
+  color: var(--color-text-meta);
 }
 
 .color-valid {
@@ -613,4 +650,12 @@ dialog:open {
 
 .color-warning {
   color: var(--color-warning);
+}
+
+.uppercase {
+  text-transform: uppercase;
+}
+
+.strong {
+  font-weight: var(--font-weight-strong);
 }
