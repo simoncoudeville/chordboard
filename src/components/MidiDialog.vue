@@ -65,7 +65,7 @@
         <!-- 1.2) Permission granted but not connected yet -->
         <template v-else-if="permission === 'granted' && !midiEnabled">
           <div class="dialog-content">
-            <p class="color-valid">MIDI allowed</p>
+            <p class="color-warning">MIDI allowed but not enabled</p>
             <p class="color-meta">Enable MIDI to continue.</p>
           </div>
           <div class="dialog-content">

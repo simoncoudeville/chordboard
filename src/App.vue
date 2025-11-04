@@ -45,6 +45,9 @@
     @stop-pad="onStopPad"
     @edit="openEditDialog"
   />
+  <div v-if="!midiSupported" class="warning">
+    <p>Warning: Your browser does not support Web MIDI.</p>
+  </div>
 
   <EditDialog
     ref="editDialogRef"

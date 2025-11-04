@@ -65,7 +65,10 @@ html {
   /* font-family: "InterVariable", sans-serif; */
   /* font-family: "IBMPlexSansVar", sans-serif; */
   /* font-family: "IBM Plex Mono"; */
-  font-family: "Roboto mono";
+  /* font-family: "Roboto mono"; */
+  font-family: ui-monospace, Menlo, Monaco, "Cascadia Mono", "Segoe UI Mono",
+    "Roboto Mono", "Oxygen Mono", "Ubuntu Mono", "Source Code Pro", "Fira Mono",
+    "Droid Sans Mono", "Consolas", "Courier New", monospace;
   font-size: calc(var(--font-size) / 16 * 100%);
   line-height: var(--computed-line-height);
   background-color: var(--color-layer-0);
@@ -160,7 +163,7 @@ button {
   color: var(--color-text);
 
   &:active {
-    background-color: var(--color-layer-1);
+    background-color: var(--color-layer-2);
     /* color: var(--color-layer-0); */
   }
 }
