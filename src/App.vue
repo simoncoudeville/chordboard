@@ -249,7 +249,9 @@ const isMidiDirty = computed(() => {
   if (!idExists || !chValid) return false;
   const currentId = selectedOutputId.value;
   const currentCh = Number(selectedOutCh.value);
-  return String(currentId) !== String(id) || currentCh !== ch;
+  return (
+    String(currentId) !== String(id) || Number.isNaN(ch) || currentCh !== ch
+  );
 });
 
 // Global scale state

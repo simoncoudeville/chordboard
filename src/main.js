@@ -1,8 +1,8 @@
 import { createApp } from "vue";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App.vue";
+import "@ibm/plex-mono/css/ibm-plex-mono-default.min.css";
 import "./style.css";
-import "./inter.css";
 
 createApp(App).mount("#app");
 

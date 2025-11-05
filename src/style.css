@@ -1,12 +1,3 @@
-@font-face {
-  font-family: IBMPlexSansVar;
-  font-style: normal;
-  font-weight: 100 900;
-  font-stretch: 85% 100%;
-  font-display: swap;
-  src: url("./assets/fonts/IBM Plex Sans Var-Roman.woff2") format("woff2");
-}
-
 :root {
   /* lightdark */
   color-scheme: dark;
@@ -63,13 +54,11 @@
 }
 
 html {
-  /* font-family: "InterVariable", sans-serif; */
-  /* font-family: "IBMPlexSansVar", sans-serif; */
-  /* font-family: "IBM Plex Mono"; */
-  /* font-family: "Roboto mono"; */
-  font-family: ui-monospace, Menlo, Monaco, "Cascadia Mono", "Segoe UI Mono",
-    "Roboto Mono", "Oxygen Mono", "Ubuntu Mono", "Source Code Pro", "Fira Mono",
-    "Droid Sans Mono", "Consolas", "Courier New", monospace;
+  /* Prefer IBM Plex Mono from npm package, fall back to system monospace */
+  font-family: "IBM Plex Mono", ui-monospace, Menlo, Monaco, "Cascadia Mono",
+    "Segoe UI Mono", "Roboto Mono", "Oxygen Mono", "Ubuntu Mono",
+    "Source Code Pro", "Fira Mono", "Droid Sans Mono", "Consolas", "Courier New",
+    monospace;
   font-size: calc(var(--font-size) / 16 * 100%);
   line-height: var(--computed-line-height);
   background-color: var(--color-layer-0);
