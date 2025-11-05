@@ -19,8 +19,8 @@ export default defineConfig({
         scope: "/chordpilot/",
         display: "standalone",
         orientation: "portrait",
-        background_color: "#FF0000",
-        theme_color: "#FF0000",
+        background_color: "#0d0d0d",
+        theme_color: "#0d0d0d",
         icons: [
           {
             src: "icons/icon-192.png",

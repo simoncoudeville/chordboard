@@ -36,11 +36,10 @@
 
   /* Figma colors — selected frame */
   --color-gray-100: #0d0d0d;
-  /* --color-gray-100: #ff0000; */
   --color-gray-200: #333333;
   --color-gray-300: #4d4d4d;
-  --color-gray-400: #3a2b2b;
-  --color-gray-450: #;
+  --color-gray-400: #999999;
+  --color-gray-450: #b3b3b3;
   --color-gray-500: #f2f2f2;
 
   /* Converted to OKLCH for perceptual uniformity; hex kept as comment fallback */
