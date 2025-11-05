@@ -15,7 +15,7 @@
 
   --font-size: 12;
   --font-size-sm: calc(12 / var(--font-size) * 1rem);
-  --font-weight-strong: 500;
+  --font-weight-strong: 600;
   --line-height: 20;
   --computed-line-height: calc(var(--line-height) / var(--font-size) * 1rem);
 
@@ -36,9 +36,11 @@
 
   /* Figma colors — selected frame */
   --color-gray-100: #0d0d0d;
+  /* --color-gray-100: #ff0000; */
   --color-gray-200: #333333;
   --color-gray-300: #4d4d4d;
-  --color-gray-400: #999999;
+  --color-gray-400: #3a2b2b;
+  --color-gray-450: #;
   --color-gray-500: #f2f2f2;
 
   /* Converted to OKLCH for perceptual uniformity; hex kept as comment fallback */
@@ -120,7 +122,7 @@ select {
   /* background-color: var(--color-layer-1); */
   background-color: var(--color-layer-0);
   /* color: var(--color-text); */
-  /* color: var(--color-text-meta); */
+  color: var(--color-text-meta);
   /* color: var(--color-text); */
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -343,9 +345,11 @@ dialog:open {
 .pads {
   --pad-min: 130px;
   padding: 0 var(--space-0-5) var(--space-0-5);
+  gap: var(--space-0-5);
+  /* padding: 0 2px 2px;
+  gap: 2px; */
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(var(--pad-min), 1fr));
-  gap: var(--space-0-5);
 }
 
 .pad {
