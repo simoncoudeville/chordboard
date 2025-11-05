@@ -98,7 +98,7 @@
           <span class="label-text">Root octave</span>
           <CustomSelect
             v-model="currentOctave"
-            :options="[2, 3, 4, 5, 6]"
+            :options="[2, 3, 4, 5]"
             :cast-number="true"
           />
         </label>
@@ -117,7 +117,7 @@
           <span class="label-text">Inversion</span>
           <CustomSelect
             v-model="currentInversion"
-            :options="editInversions"
+            :options="validInversions"
             :disabled="!currentExtension || isNonTertianChord"
           />
         </label>
@@ -133,7 +133,7 @@
       <div class="dialog-content chord-preview">
         <KeyboardExtended
           :highlighted-notes="previewNotesAsc"
-          :start-octave="2"
+          :start-octave="1"
           :octaves="7"
         />
         <div class="chord-preview-output">
@@ -161,7 +161,7 @@
           @pointercancel.prevent.stop="$emit('preview-stop', { event: $event })"
           @contextmenu.prevent
         >
-          Preview
+          Play Chord
         </button>
       </div>
       <div class="dialog-buttons">
@@ -329,7 +329,26 @@ const rootOptions = computed(() => {
   });
 });
 const extensionOptions = ["triad", "7", "maj7", "9", "add9", "sus2", "sus4"];
-// Inversions to apply on the base ascending stack
+
+// Valid inversions based on current extension
+const validInversions = computed(() => {
+  const ext = currentExtension.value;
+  // Triad = 3 notes → root, 1st, 2nd
+  if (ext === "triad" || ext === "sus2" || ext === "sus4") {
+    return ["root", "1st", "2nd"];
+  }
+  // 7th chord = 4 notes → root, 1st, 2nd, 3rd
+  if (ext === "7" || ext === "maj7") {
+    return ["root", "1st", "2nd", "3rd"];
+  }
+  // 9th chord = 5 notes → root, 1st, 2nd, 3rd, 4th
+  if (ext === "9" || ext === "add9") {
+    return ["root", "1st", "2nd", "3rd", "4th"];
+  }
+  return ["root", "1st", "2nd"];
+});
+
+// All possible inversions for the dropdown
 const editInversions = ["root", "1st", "2nd", "3rd", "4th"];
 const voicingTypeOptions = ["close", "open", "drop2", "drop3", "spread"];
 const isNonTertianChord = computed(() => {
@@ -548,6 +567,8 @@ const previewNotesHtml = computed(() =>
 );
 
 function open() {
+  // Reset dialog state to match the pad's saved state
+  applyPadState(props.padState);
   dlg.value?.showModal?.();
 }
 function close() {
@@ -585,6 +606,47 @@ watch(
   { immediate: false }
 );
 
+// When extension changes, clamp inversion to valid range and reset voicing
+watch(
+  () => currentExtension.value,
+  () => {
+    const valid = validInversions.value;
+    const currentInv = currentInversion.value;
+
+    // If current inversion is not valid for this extension, reset to root
+    if (!valid.includes(currentInv)) {
+      if (model.value.mode === "scale") {
+        stateScale.inversion = "root";
+      } else {
+        stateFree.inversion = "root";
+      }
+    }
+
+    // Always reset voicing when extension changes
+    if (model.value.mode === "scale") {
+      stateScale.voicing = "close";
+    } else {
+      stateFree.voicing = "close";
+    }
+  }
+);
+
+// When chord/root/type changes, reset extension, inversion, and voicing to defaults
+watch(
+  () => [stateScale.degree, stateFree.root, stateFree.type],
+  () => {
+    if (model.value.mode === "scale") {
+      stateScale.extension = "triad";
+      stateScale.inversion = "root";
+      stateScale.voicing = "close";
+    } else {
+      stateFree.extension = "triad";
+      stateFree.inversion = "root";
+      stateFree.voicing = "close";
+    }
+  }
+);
+
 defineExpose({ open, close, dlg, resetToDefaults });
 
 // --- Saving support ---
@@ -611,7 +673,18 @@ function buildPadSnapshot() {
 }
 
 function applyPadState(s) {
-  if (!s || typeof s !== "object") return;
+  // Unassigned pad: reset to defaults with scale mode
+  if (
+    !s ||
+    typeof s !== "object" ||
+    s.mode === "unassigned" ||
+    s.assigned === false
+  ) {
+    resetToDefaults();
+    return;
+  }
+
+  // Assigned pad: apply saved state
   if (s.mode === "scale" || s.mode === "free") model.value.mode = s.mode;
   if (s.scale && typeof s.scale === "object") {
     if (s.scale.degree != null) stateScale.degree = String(s.scale.degree);
