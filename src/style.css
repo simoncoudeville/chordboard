@@ -100,7 +100,7 @@ label {
   font-stretch: 85%;
   text-transform: uppercase;
   display: inline-block;
-  padding-right: var(--space-1);
+  padding-right: var(--space-3);
   padding-bottom: var(--space-1);
 }
 
@@ -211,7 +211,7 @@ button {
 
 .dialog-buttons button,
 .button.large {
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-1) var(--space-1-5);
 }
 
 .button.reversed {
@@ -304,7 +304,7 @@ dialog:open {
   justify-content: flex-end;
   margin-top: calc(var(--space-1) * -1);
   margin-bottom: calc(var(--space-1) * -1);
-  margin-right: calc(var(--space-2) * -1);
+  margin-right: calc(var(--space-1-5) * -1);
   /* gap: var(--space-3); */
 }
 
@@ -319,7 +319,7 @@ dialog:open {
 .top-left {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-1-5);
 }
 
 .midi-status-container {
@@ -572,22 +572,51 @@ dialog:open {
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: var(--space-2) var(--space-2-5);
   align-items: center;
+  display: flex;
+  flex-wrap: wrap;
 }
 
-.grid-span-2 {
-  grid-column: span 2;
+.edit-grid-item {
+  flex-grow: 1;
+  flex-basis: 40%;
 }
 
 .chord-preview-output {
   display: flex;
   gap: var(--space-2);
-  align-items: center;
   /* justify-content: space-between; */
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.chord-preview-summary {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.chord-preview-play-button {
+  padding: var(--space-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: var(--color-border) solid 1px;
+  background-color: var(--color-layer-1);
+  /* color: var(--color-text-meta); */
+  color: var(--color-text);
+  border-radius: var(--radius);
+
+  &:active {
+    background-color: var(--color-text);
+    color: var(--color-layer-0);
+  }
 }
 
 .chord-preview {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-2-5);
 }
 
 .sr-only {
@@ -666,6 +695,10 @@ dialog:open {
 
 .flex-grow-1 {
   flex-grow: 1;
+}
+
+.flex-grow-2 {
+  flex-grow: 2;
 }
 
 .color-meta {

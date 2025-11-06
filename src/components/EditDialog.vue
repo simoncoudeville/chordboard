@@ -45,8 +45,12 @@
       <template v-if="model.mode === 'scale'">
         <div class="dialog-content">
           <p class="global-scale-info">
-            <Music2 aria-hidden="true" :size="14" stroke-width="2" />
-
+            <Music2
+              aria-hidden="true"
+              :size="16"
+              :stroke-width="1"
+              :absoluteStrokeWidth="true"
+            />
             Global scale: <span>{{ globalScale }}</span>
             {{ globalScaleType }}
           </p>
@@ -55,7 +59,7 @@
       <div class="dialog-content edit-grid">
         <!-- Primary chord selector: degree (scale mode) or root/type (free mode) -->
         <template v-if="model.mode === 'scale'">
-          <label class="flex-grow-1">
+          <label class="edit-grid-item">
             <span class="label-text">Chord</span>
             <CustomSelect
               v-model="stateScale.degree"
@@ -74,7 +78,7 @@
           </label>
         </template>
         <template v-else>
-          <label>
+          <label class="edit-grid-item">
             <span class="label-text">Root</span>
             <CustomSelect
               v-model="stateFree.root"
@@ -84,7 +88,7 @@
               wrapper-class="select-scale"
             />
           </label>
-          <label>
+          <label class="edit-grid-item">
             <span class="label-text">Type</span>
             <CustomSelect
               v-model="stateFree.type"
@@ -94,7 +98,7 @@
         </template>
 
         <!-- Root octave always active -->
-        <label class="flex-grow-1">
+        <label class="edit-grid-item">
           <span class="label-text">Root octave</span>
           <CustomSelect
             v-model="currentOctave"
@@ -104,7 +108,7 @@
         </label>
 
         <!-- Chord type / extension -->
-        <label class="flex-grow-1">
+        <label class="edit-grid-item">
           <span class="label-text">Extension</span>
           <CustomSelect
             v-model="currentExtension"
@@ -113,7 +117,7 @@
         </label>
 
         <!-- Inversion then Voicing pattern -->
-        <label class="flex-grow-1">
+        <label class="edit-grid-item">
           <span class="label-text">Inversion</span>
           <CustomSelect
             v-model="currentInversion"
@@ -121,7 +125,7 @@
             :disabled="!currentExtension || isNonTertianChord"
           />
         </label>
-        <label class="flex-grow-1">
+        <label class="edit-grid-item">
           <span class="label-text">Voicing</span>
           <CustomSelect
             v-model="currentVoicing"
@@ -131,22 +135,50 @@
         </label>
       </div>
       <div class="dialog-content chord-preview">
+        <div class="chord-preview-output">
+          <div class="chord-preview-summary">
+            <div class="chord-preview-symbol">
+              <span class="uppercase color-meta">Chord: </span>
+              <span>{{ previewChordHtml }}</span>
+            </div>
+            <div class="chord-preview-notes">
+              <span class="uppercase color-meta">Notes: </span>
+              <span>{{ previewNotesHtml }}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="chord-preview-play-button"
+            :disabled="!hasChordForPreview"
+            @pointerdown.prevent.stop="
+              $emit('preview-start', {
+                event: $event,
+                notes: previewNotesAsc,
+              })
+            "
+            @pointerup.prevent.stop="$emit('preview-stop', { event: $event })"
+            @pointerleave.prevent.stop="
+              $emit('preview-stop', { event: $event })
+            "
+            @pointercancel.prevent.stop="
+              $emit('preview-stop', { event: $event })
+            "
+            @contextmenu.prevent
+          >
+            <Headphones
+              aria-hidden="true"
+              :stroke-width="1"
+              :size="16"
+              :absoluteStrokeWidth="true"
+            />
+          </button>
+        </div>
         <KeyboardExtended
           :highlighted-notes="previewNotesAsc"
           :start-octave="1"
           :octaves="7"
         />
-        <div class="chord-preview-output">
-          <div class="chord-preview-symbol">
-            <span class="uppercase color-meta">Chord: </span>
-            <span>{{ previewChordHtml }}</span>
-          </div>
-          <div class="chord-preview-notes">
-            <span class="uppercase color-meta">Notes: </span>
-            <span>{{ previewNotesHtml }}</span>
-          </div>
-        </div>
-        <button
+        <!--<button
           type="button"
           class="button large preview"
           :disabled="!hasChordForPreview"
@@ -163,6 +195,7 @@
         >
           Play Chord
         </button>
+        -->
       </div>
       <div class="dialog-buttons">
         <button type="button" @click="onClose">Cancel</button>
@@ -180,7 +213,7 @@
 
 <script setup>
 import { ref, computed, reactive, watch, nextTick } from "vue";
-import { X, Music2 } from "lucide-vue-next";
+import { X, Music2, Volume1, Headphones } from "lucide-vue-next";
 import CustomSelect from "./CustomSelect.vue";
 import KeyboardExtended from "./KeyboardExtended.vue";
 import { Scale, Chord, Note } from "@tonaljs/tonal";

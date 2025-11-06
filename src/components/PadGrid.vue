@@ -31,7 +31,7 @@
           <Repeat
             class="pad-edit-icon"
             aria-hidden="true"
-            :stroke-width="1.5"
+            :stroke-width="1.25"
             :size="16"
             :absoluteStrokeWidth="true"
           />

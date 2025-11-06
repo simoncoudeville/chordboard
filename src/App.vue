@@ -18,7 +18,6 @@
           :iconNode="Midi"
           :stroke-width="1.5"
           :size="20"
-          :absoluteStrokeWidth="true"
         />
       </button>
       <button
@@ -26,12 +25,7 @@
         type="button"
         @click="openGlobalKeyDialog"
       >
-        <Music2
-          aria-hidden="true"
-          :stroke-width="1.5"
-          :size="20"
-          :absoluteStrokeWidth="true"
-        />
+        <Music2 aria-hidden="true" :stroke-width="1.5" :size="20" />
       </button>
     </div>
   </div>

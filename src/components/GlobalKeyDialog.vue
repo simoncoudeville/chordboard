@@ -26,7 +26,7 @@
         </p>
       </div>
       <div class="dialog-content edit-grid">
-        <label>
+        <label class="flex-grow-1">
           <span class="label-text">Root</span>
           <CustomSelect
             v-model="scaleLocal"
@@ -36,7 +36,7 @@
             wrapper-class="select-scale"
           />
         </label>
-        <label>
+        <label class="flex-grow-2">
           <span class="label-text">Type</span>
           <CustomSelect
             v-model="typeLocal"

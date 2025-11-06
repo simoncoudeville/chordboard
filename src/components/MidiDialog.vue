@@ -97,7 +97,7 @@
             </button>
           </div>
           <div class="dialog-content edit-grid">
-            <label class="flex-grow-1">
+            <label class="flex-grow-2">
               <span class="label-text">Output Port</span>
               <CustomSelect
                 v-model="outputIdProxy"
@@ -107,7 +107,7 @@
                 :disabled="true"
               />
             </label>
-            <label>
+            <label class="flex-grow-2">
               <span class="label-text">Channel</span>
               <CustomSelect
                 v-model="outChProxy"
