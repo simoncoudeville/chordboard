@@ -1,29 +1,32 @@
 <template>
   <div class="keyboard keyboard-extended">
-    <div class="keyboard-octaves">
-      <div v-for="oct in octavesRange" :key="oct" class="keyboard-octave">
-        <div
-          v-for="pc in whitePcs"
-          :key="pc + oct"
-          :class="[
-            'key',
-            `key-${pc}`,
-            'key-white',
-            isNoteActive(pc, oct) ? 'key-played' : '',
-          ]"
-          :data-note="pc.toUpperCase() + oct"
-        ></div>
-        <div
-          v-for="pc in blackPcs"
-          :key="pc + oct"
-          :class="[
-            'key',
-            `key-${pc}`,
-            'key-black',
-            isNoteActive(pc, oct) ? 'key-played' : '',
-          ]"
-          :data-note="pc.toUpperCase() + oct"
-        ></div>
+    <!--<div class="root-dot"></div>-->
+    <div class="keyboard-wrapper">
+      <div class="keyboard-octaves">
+        <div v-for="oct in octavesRange" :key="oct" class="keyboard-octave">
+          <div
+            v-for="pc in whitePcs"
+            :key="pc + oct"
+            :class="[
+              'key',
+              `key-${pc}`,
+              'key-white',
+              isNoteActive(pc, oct) ? 'key-played' : '',
+            ]"
+            :data-note="pc.toUpperCase() + oct"
+          ></div>
+          <div
+            v-for="pc in blackPcs"
+            :key="pc + oct"
+            :class="[
+              'key',
+              `key-${pc}`,
+              'key-black',
+              isNoteActive(pc, oct) ? 'key-played' : '',
+            ]"
+            :data-note="pc.toUpperCase() + oct"
+          ></div>
+        </div>
       </div>
     </div>
   </div>

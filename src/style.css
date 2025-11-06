@@ -199,7 +199,10 @@ button {
   /* background-color: var(--color-warning); */
   /* color: var(--color-layer-0); */
   color: var(--color-warning);
-  padding-bottom: var(--space-0-5);
+  padding: var(--space-0-5);
+  position: fixed;
+  inset: auto 0 0 0;
+  background-color: var(--color-layer-0);
 }
 
 .button.md {
@@ -427,13 +430,34 @@ dialog:open {
   touch-action: none; /* let pointer events control gestures */
 }
 
+.root-dot {
+  position: absolute;
+  left: 0;
+  translate: calc(
+      var(--key-w) * 8 + var(--gap) * 7 - var(--root-dot-size) / 2 -
+        var(--key-w) / 2
+    )
+    calc(var(--key-h) + 2px);
+  width: var(--root-dot-size);
+  height: var(--root-dot-size);
+  background-color: var(--color-text-meta);
+  /* border: 1px solid var(--color-text); */
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2;
+}
+
 .keyboard {
+  --root-dot-size: 4px;
   --key-w: calc(7 / var(--font-size) * 1rem); /* white key width */
   --key-h: calc(28 / var(--font-size) * 1rem); /* white key height */
   --black-w: calc(6 / var(--font-size) * 1rem); /* black key width */
   --black-h: calc(18 / var(--font-size) * 1rem); /* black key height */
   --gap: 1px; /* spacing between white keys */
-  border-radius: var(--radius);
+  position: relative;
+  /* border-radius: var(--radius); */
+  padding: calc(var(--root-dot-size) + 2px) 0;
+  margin: calc(var(--root-dot-size) * -1 - 2px) 0;
   overflow: hidden;
 }
 
@@ -444,8 +468,14 @@ dialog:open {
 }
 
 .keyboard-octaves {
+  position: relative;
   display: flex;
   gap: var(--gap);
+}
+
+.keyboard-wrapper {
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .keyboard-octave {

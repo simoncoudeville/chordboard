@@ -179,7 +179,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch } from "vue";
+import { ref, computed, reactive, watch, nextTick } from "vue";
 import { X, Music2 } from "lucide-vue-next";
 import CustomSelect from "./CustomSelect.vue";
 import KeyboardExtended from "./KeyboardExtended.vue";
@@ -355,6 +355,9 @@ const isNonTertianChord = computed(() => {
   const ext = currentExtension.value;
   return ext === "sus2" || ext === "sus4";
 });
+
+// Skip watcher side-effects while we restore a saved pad state
+const isApplyingPadState = ref(false);
 
 // Derive base triad quality for the selected scale degree ("", "m", "dim", "aug")
 const baseQualityFromScale = computed(() => {
@@ -610,6 +613,7 @@ watch(
 watch(
   () => currentExtension.value,
   () => {
+    if (isApplyingPadState.value) return;
     const valid = validInversions.value;
     const currentInv = currentInversion.value;
 
@@ -635,6 +639,7 @@ watch(
 watch(
   () => [stateScale.degree, stateFree.root, stateFree.type],
   () => {
+    if (isApplyingPadState.value) return;
     if (model.value.mode === "scale") {
       stateScale.extension = "triad";
       stateScale.inversion = "root";
@@ -673,6 +678,7 @@ function buildPadSnapshot() {
 }
 
 function applyPadState(s) {
+  isApplyingPadState.value = true;
   // Unassigned pad: reset to defaults with scale mode
   if (
     !s ||
@@ -681,6 +687,9 @@ function applyPadState(s) {
     s.assigned === false
   ) {
     resetToDefaults();
+    nextTick(() => {
+      isApplyingPadState.value = false;
+    });
     return;
   }
 
@@ -701,6 +710,10 @@ function applyPadState(s) {
     if (s.free.inversion) stateFree.inversion = String(s.free.inversion);
     if (s.free.voicing) stateFree.voicing = String(s.free.voicing);
   }
+
+  nextTick(() => {
+    isApplyingPadState.value = false;
+  });
 }
 
 watch(
