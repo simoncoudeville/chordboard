@@ -51,8 +51,7 @@
               :stroke-width="1"
               :absoluteStrokeWidth="true"
             />
-            Global scale: <span>{{ globalScale }}</span>
-            {{ globalScaleType }}
+            Global scale: <span>{{ globalScaleDisplay }}</span>
           </p>
         </div>
       </template>
@@ -223,7 +222,8 @@ import { formatNoteName, formatChordSymbol } from "../utils/enharmonic";
 const props = defineProps({
   padIndex: { type: Number, default: 0 },
   // Receive current global scale from parent (App.vue)
-  globalScale: { type: String, default: "" },
+  globalScaleRoot: { type: String, default: "" },
+  globalScaleDisplay: { type: String, default: "" },
   globalScaleType: { type: String, default: "" },
   permissionAllowed: { type: Boolean, default: false },
   midiEnabled: { type: Boolean, default: false },
@@ -292,7 +292,7 @@ const currentVoicing = computed({
 });
 // Notes for the current global scale (pitch classes, no octaves)
 const scaleNotes = computed(() => {
-  const root = props.globalScale || "C";
+  const root = props.globalScaleRoot || "C";
   const type = props.globalScaleType || "major";
   const { notes } = Scale.get(`${root} ${type}`);
   return Array.isArray(notes) ? notes : [];
@@ -598,12 +598,18 @@ const previewNotesAsc = computed(() => {
 const hasChordForPreview = computed(
   () => (previewNotesAsc.value?.length ?? 0) > 0
 );
-const previewChordHtml = computed(() => 
-  formatChordSymbol(previewChordSymbol.value, props.globalScale)
+const previewChordHtml = computed(() =>
+  formatChordSymbol(
+    previewChordSymbol.value,
+    props.globalScaleRoot,
+    props.globalScaleType
+  )
 );
 const previewNotesHtml = computed(() => {
   const notes = previewNotesAsc.value || [];
-  const formatted = notes.map(n => formatNoteName(n, props.globalScale));
+  const formatted = notes.map((n) =>
+    formatNoteName(n, props.globalScaleRoot, props.globalScaleType)
+  );
   return formatted.join(" ");
 });
 
@@ -640,7 +646,7 @@ function resetToDefaults() {
 
 // When the global scale changes, reset the edit selections to defaults
 watch(
-  () => [props.globalScale, props.globalScaleType],
+  () => [props.globalScaleRoot, props.globalScaleType],
   () => {
     resetToDefaults();
   },

@@ -52,7 +52,8 @@
     ref="editDialogRef"
     :pad-index="currentPadIndex"
     :pad-state="pads[currentPadIndex]"
-    :global-scale="globalScale"
+    :global-scale-root="preferredGlobalScaleRoot"
+    :global-scale-display="globalScaleDisplayName"
     :global-scale-type="globalScaleType"
     :permission-allowed="permissionAllowed"
     :midi-enabled="midiEnabled"
@@ -200,7 +201,12 @@ import GlobalKeyDialog from "./components/GlobalKeyDialog.vue";
 import { useMidi } from "./composables/useMidi";
 import { Scale, Chord, Note } from "@tonaljs/tonal";
 import { pcToKeyToken } from "./utils/music";
-import { formatNoteName, formatChordSymbol } from "./utils/enharmonic";
+import {
+  formatNoteName,
+  formatChordSymbol,
+  preferredScaleRoot,
+  formatScaleName,
+} from "./utils/enharmonic";
 
 const {
   midiEnabled,
@@ -252,10 +258,21 @@ const isMidiDirty = computed(() => {
 // Global scale state
 const globalScale = ref("C");
 const globalScaleType = ref("major");
+
+const preferredGlobalScaleRoot = computed(() =>
+  preferredScaleRoot(globalScale.value, globalScaleType.value)
+);
+
+const globalScaleDisplayName = computed(() =>
+  formatScaleName(globalScale.value, globalScaleType.value)
+);
+
 const globalScaleNotes = computed(() => {
   try {
     return (
-      Scale.get(`${globalScale.value} ${globalScaleType.value}`).notes || []
+      Scale.get(
+        `${preferredGlobalScaleRoot.value} ${globalScaleType.value}`
+      ).notes || []
     );
   } catch {
     return [];
@@ -763,7 +780,11 @@ function padNotes(pad) {
 function padButtonLabelHtml(pad) {
   const s = padChordSymbol(pad);
   if (!s) return "UNASSIGNED";
-  return formatChordSymbol(s, globalScale.value);
+  return formatChordSymbol(
+    s,
+    preferredGlobalScaleRoot.value,
+    globalScaleType.value
+  );
 }
 
 import { reactive } from "vue";
@@ -891,7 +912,9 @@ const nowPlayingHtml = computed(() => {
   // Sort ascending by MIDI for readability
   notes.sort((a, b) => (Note.midi(a) ?? 0) - (Note.midi(b) ?? 0));
   // Format each note with enharmonic preference based on global key
-  const formatted = notes.map(n => formatNoteName(n, globalScale.value));
+  const formatted = notes.map((n) =>
+    formatNoteName(n, preferredGlobalScaleRoot.value, globalScaleType.value)
+  );
   return formatted.join(" ");
 });
 </script>
