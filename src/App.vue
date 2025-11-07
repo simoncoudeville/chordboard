@@ -200,6 +200,7 @@ import GlobalKeyDialog from "./components/GlobalKeyDialog.vue";
 import { useMidi } from "./composables/useMidi";
 import { Scale, Chord, Note } from "@tonaljs/tonal";
 import { pcToKeyToken } from "./utils/music";
+import { formatNoteName, formatChordSymbol } from "./utils/enharmonic";
 
 const {
   midiEnabled,
@@ -761,7 +762,8 @@ function padNotes(pad) {
 
 function padButtonLabelHtml(pad) {
   const s = padChordSymbol(pad);
-  return s || "UNASSIGNED";
+  if (!s) return "UNASSIGNED";
+  return formatChordSymbol(s, globalScale.value);
 }
 
 import { reactive } from "vue";
@@ -888,6 +890,8 @@ const nowPlayingHtml = computed(() => {
   if (!notes.length) return "";
   // Sort ascending by MIDI for readability
   notes.sort((a, b) => (Note.midi(a) ?? 0) - (Note.midi(b) ?? 0));
-  return notes.join(" ");
+  // Format each note with enharmonic preference based on global key
+  const formatted = notes.map(n => formatNoteName(n, globalScale.value));
+  return formatted.join(" ");
 });
 </script>

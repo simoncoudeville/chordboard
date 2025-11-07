@@ -217,6 +217,7 @@ import { X, Music2, Volume1, Headphones } from "lucide-vue-next";
 import CustomSelect from "./CustomSelect.vue";
 import KeyboardExtended from "./KeyboardExtended.vue";
 import { Scale, Chord, Note } from "@tonaljs/tonal";
+import { formatNoteName, formatChordSymbol } from "../utils/enharmonic";
 
 // Keep padIndex so the title continues to work; expose open/close for parent
 const props = defineProps({
@@ -597,10 +598,14 @@ const previewNotesAsc = computed(() => {
 const hasChordForPreview = computed(
   () => (previewNotesAsc.value?.length ?? 0) > 0
 );
-const previewChordHtml = computed(() => previewChordSymbol.value);
-const previewNotesHtml = computed(() =>
-  (previewNotesAsc.value || []).join(" ")
+const previewChordHtml = computed(() => 
+  formatChordSymbol(previewChordSymbol.value, props.globalScale)
 );
+const previewNotesHtml = computed(() => {
+  const notes = previewNotesAsc.value || [];
+  const formatted = notes.map(n => formatNoteName(n, props.globalScale));
+  return formatted.join(" ");
+});
 
 function open() {
   // Reset dialog state to match the pad's saved state
