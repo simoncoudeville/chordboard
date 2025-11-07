@@ -29,43 +29,26 @@ function accidentalScore(note = "") {
   return accidentals.length;
 }
 
-function scaleScore(tonic, type) {
-  const id = `${tonic} ${type}`.trim();
-  const { notes } = Scale.get(id);
-  if (!notes || notes.length === 0) return Number.POSITIVE_INFINITY;
-  return notes.reduce((sum, n) => sum + accidentalScore(n), 0);
-}
-
 /**
  * Determine the preferred enharmonic spelling for the given scale root/type.
- * Uses Tonal.js to compare the number of accidentals present in each candidate.
+ * Uses Tonal.js to get the canonical tonic from the scale.
  */
 export function preferredScaleRoot(root, type = "major") {
-  const info = Note.get(root);
-  if (!info || info.empty) return root;
-
-  const basePc = info.pc;
-  const candidates = new Set([basePc]);
-  const enh = Note.enharmonic(basePc);
-  if (enh && enh !== basePc) candidates.add(enh);
-
-  let best = basePc;
-  let bestScore = Number.POSITIVE_INFINITY;
-
-  for (const candidate of candidates) {
-    const score = scaleScore(candidate, type);
-    if (score < bestScore) {
-      best = candidate;
-      bestScore = score;
-    }
+  if (!root) return "C";
+  const scale = Scale.get(`${root} ${type}`);
+  // Use Tonal's canonical tonic if available
+  if (scale && scale.tonic) {
+    return scale.tonic;
   }
-
-  return best;
+  return root;
 }
 
 export function formatScaleName(root, type = "major") {
   const preferredRoot = preferredScaleRoot(root, type);
-  return `${preferredRoot} ${toTitleCase(type)}`.trim();
+  // User preference: keep ASCII accidentals and use lowercase scale type
+  const displayRoot = preferredRoot; // e.g. Ab, C#, Gb
+  const displayType = String(type || "").toLowerCase(); // "major" or "minor"
+  return `${displayRoot} ${displayType}`.trim();
 }
 
 /**
