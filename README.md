@@ -1,6 +1,6 @@
-# Chordpilot (Vite + Vue 3 + WebMIDI)
+# Chordboard (Vite + Vue 3 + WebMIDI)
 
-Chordpilot is a browser-based chord pad tool for quickly auditioning and sending harmonies to your synths or DAW over MIDI. It uses WebMidi.js for MIDI I/O and Tonal.js for music-theory utilities.
+Chordboard is a browser-based chord pad tool for quickly auditioning and sending harmonies to your synths or DAW over MIDI. It uses WebMidi.js for MIDI I/O and Tonal.js for music-theory utilities.
 
 ## Highlights
 
@@ -67,8 +67,8 @@ npm run dev
 ## Persisted settings
 
 - Pads and MIDI settings are stored in localStorage under:
-  - `midi-test:pads`
-  - `midi-test:midi-settings`
+  - `chordboard:pads`
+  - `chordboard:midi-settings`
 
 ## Project structure
 

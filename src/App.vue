@@ -261,7 +261,7 @@ const globalScaleNotes = computed(() => {
   }
 });
 
-const GLOBAL_SCALE_KEY = "midi-test:global-scale";
+const GLOBAL_SCALE_KEY = "chordboard:global-scale";
 
 // Load global scale settings from localStorage
 function loadGlobalScaleSettings() {
@@ -396,7 +396,7 @@ function clearVisualDisplay() {
 }
 
 const PAD_COUNT = 15;
-const PADS_KEY = "midi-test:pads";
+const PADS_KEY = "chordboard:pads";
 
 function defaultPad() {
   return {

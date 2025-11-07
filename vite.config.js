@@ -12,11 +12,11 @@ export default defineConfig({
         enabled: true,
       },
       manifest: {
-        name: "ChordPilot",
-        short_name: "ChordPilot",
+        name: "Chordboard",
+        short_name: "Chordboard",
         description: "MIDI chord pad controller with scale-aware voicings.",
-        start_url: "/chordpilot/",
-        scope: "/chordpilot/",
+        start_url: "/chordboard/",
+        scope: "/chordboard/",
         display: "standalone",
         orientation: "portrait",
         background_color: "#0d0d0d",
@@ -42,8 +42,8 @@ export default defineConfig({
       },
     }),
   ],
-  // Ensure correct asset paths when hosted at https://<user>.github.io/chordpilot/
-  base: "/chordpilot/",
+  // Ensure correct asset paths when hosted at https://<user>.github.io/chordboard/
+  base: "/chordboard/",
   server: {
     host: true,
     port: 3000,

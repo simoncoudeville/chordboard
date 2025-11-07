@@ -12,7 +12,7 @@ export function useMidi() {
   const permissionAllowed = computed(() => permission.value === "granted");
   const permissionPrompt = computed(() => permission.value === "prompt");
 
-  const MIDI_SETTINGS_KEY = "midi-test:midi-settings";
+  const MIDI_SETTINGS_KEY = "chordboard:midi-settings";
 
   // Track if MIDI was connected in the last session
   const midiWasConnected = ref(false);
