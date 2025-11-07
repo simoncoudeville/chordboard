@@ -7,12 +7,14 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "icons:build": "node scripts/generate-icons.mjs",
     "test": "vitest --run",
     "test:ui": "vitest"
   },
   "devDependencies": {
     "@vue/test-utils": "^2.4.6",
     "jsdom": "^25.0.1",
+    "sharp": "^0.33.5",
     "vite": "^6.1.0",
     "vite-plugin-pwa": "^1.1.0",
     "vitest": "^2.1.4"
