@@ -13,7 +13,6 @@
             class="dialog-close-icon"
             aria-hidden="true"
             :stroke-width="1.5"
-            :size="16"
             :absoluteStrokeWidth="true"
           />
 
@@ -51,7 +50,7 @@
               :stroke-width="1"
               :absoluteStrokeWidth="true"
             />
-            Global scale: <span>{{ globalScaleDisplay }}</span>
+            Global scale: <span>{{ globalScaleDisplay }}</span>            
           </p>
         </div>
       </template>
@@ -70,7 +69,7 @@
                   :key="ch.degree"
                   :value="ch.degree"
                 >
-                  {{ ch.display || ch.degree }}
+                  {{ ch.display }}
                 </option>
               </template>
             </CustomSelect>
@@ -91,7 +90,9 @@
             <span class="label-text">Type</span>
             <CustomSelect
               v-model="stateFree.type"
-              :options="['major', 'minor']"
+              :options="freeTypeOptions"
+              option-value-key="value"
+              option-label-key="label"
             />
           </label>
         </template>
@@ -241,7 +242,7 @@ const model = ref({ mode: "scale" });
 
 // Independent state per mode
 const stateScale = reactive({
-  degree: "1",
+  degree: "1", // default to tonic degree
   octave: 4,
   extension: "triad",
   inversion: "root",
@@ -256,6 +257,9 @@ const stateFree = reactive({
   inversion: "root",
   voicing: "close",
 });
+
+const previousScaleExtension = ref("triad");
+const previousFreeExtension = ref("triad");
 
 // Mode-bridged computed bindings for shared controls
 const currentOctave = computed({
@@ -326,13 +330,45 @@ function qualityForDegree(index) {
 }
 
 // Populate degree selector with chord symbols: C, Dm, Em, F, G, Am, Bdim, etc.
+const ROMAN_DEGREES = ["I", "ii", "iii", "IV", "V", "vi", "vii°"];
+const ROMAN_TO_NUMERIC = ROMAN_DEGREES.reduce((acc, roman, idx) => {
+  acc[roman] = String(idx + 1);
+  return acc;
+}, {});
+
+function normalizeDegree(value) {
+  if (value == null) return "1";
+  const raw = String(value).trim();
+  if (raw in ROMAN_TO_NUMERIC) return ROMAN_TO_NUMERIC[raw];
+  const normalizedSymbol = raw.replace(/º/g, "°");
+  if (normalizedSymbol in ROMAN_TO_NUMERIC)
+    return ROMAN_TO_NUMERIC[normalizedSymbol];
+  const parsed = Number.parseInt(raw, 10);
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return String(((parsed - 1) % 7) + 1);
+  }
+  return "1";
+}
+
+function degreeNumber(value) {
+  const normalized = normalizeDegree(value);
+  const parsed = Number.parseInt(normalized, 10);
+  return Number.isFinite(parsed) ? Math.max(1, Math.min(7, parsed)) : 1;
+}
+
 const editChordOptions = computed(() =>
   scaleNotes.value.map((n, i) => {
     const q = qualityForDegree(i);
     const suffix = q === "" ? "" : q === "m" ? "m" : q; // "m", "dim", "aug"
+    // Add 7 to dominant (degree V) display (only if not already diminished/augmented)
+    let display = `${n}${suffix}`;
+    if (i === 4 && suffix === "") {
+      display = `${n}7`;
+    }
     return {
       degree: String(i + 1),
-      display: `${n}${suffix}`,
+      roman: ROMAN_DEGREES[i] || String(i + 1),
+      display,
     };
   })
 );
@@ -362,33 +398,78 @@ const rootOptions = computed(() => {
     return { value: pc, label: pc };
   });
 });
-const extensionOptions = ["triad", "7", "maj7", "9", "add9", "sus2", "sus4"];
+const FREE_TYPE_OPTIONS = Object.freeze([
+  { value: "major", label: "Major" },
+  { value: "dominant", label: "Dominant" },
+  { value: "minor", label: "Minor" },
+  { value: "diminished", label: "Diminished" },
+  { value: "half-diminished", label: "Half diminished" },
+  { value: "augmented", label: "Augmented" },
+  { value: "sus2", label: "Sus2" },
+  { value: "sus4", label: "Sus4" },
+  { value: "power", label: "Power" },
+]);
+const freeTypeOptions = FREE_TYPE_OPTIONS;
+const CHORD_TYPE_EXTENSION_OPTIONS = Object.freeze({
+  major: ["triad", "6", "7", "maj7", "maj9", "add9"],
+  minor: [
+    "triad",
+    "6",
+    "7",
+    "9",
+    "add9",
+  ],
+  dominant: ["7", "9", "add9"],
+  diminished: ["triad", "7", "9"],
+  halfDiminished: ["7", "9"],
+  augmented: ["triad", "maj7", "9"],
+  minorMajor: ["maj7", "maj9"],
+  major6: ["6", "add9"],
+  minor6: ["6", "add9"],
+  sus2: ["sus2", "add9"],
+  sus4: ["sus4", "add9"],
+  power: ["power"],
+});
+
+function extensionOptionsForType(type) {
+  const opts = CHORD_TYPE_EXTENSION_OPTIONS[type];
+  return opts && opts.length ? [...opts] : ["triad"];
+}
+
+function isSuspension(ext) {
+  return ext === "sus2" || ext === "sus4";
+}
+
+const scaleChordType = computed(() => determineScaleChordType(stateScale.extension));
+const freeChordType = computed(() => determineFreeChordType(stateFree.extension));
+const scaleBaseChordType = computed(() => determineScaleChordType("triad"));
+const freeBaseChordType = computed(() => determineFreeChordType("triad"));
+const scaleExtensionOptions = computed(() =>
+  extensionOptionsForType(scaleBaseChordType.value)
+);
+const freeExtensionOptions = computed(() =>
+  extensionOptionsForType(freeBaseChordType.value)
+);
+const extensionOptions = computed(() =>
+  model.value.mode === "scale"
+    ? scaleExtensionOptions.value
+    : freeExtensionOptions.value
+);
 
 // Valid inversions based on current extension
 const validInversions = computed(() => {
   const ext = currentExtension.value;
-  // Triad = 3 notes → root, 1st, 2nd
-  if (ext === "triad" || ext === "sus2" || ext === "sus4") {
-    return ["root", "1st", "2nd"];
-  }
-  // 7th chord = 4 notes → root, 1st, 2nd, 3rd
-  if (ext === "7" || ext === "maj7") {
-    return ["root", "1st", "2nd", "3rd"];
-  }
-  // 9th chord = 5 notes → root, 1st, 2nd, 3rd, 4th
-  if (ext === "9" || ext === "add9") {
-    return ["root", "1st", "2nd", "3rd", "4th"];
-  }
-  return ["root", "1st", "2nd"];
+  const chordType =
+    model.value.mode === "scale" ? scaleChordType.value : freeChordType.value;
+  const noteCount = extensionNoteCount(ext, chordType);
+  const maxIndex = Math.max(0, noteCount - 1);
+  return editInversions.filter((_, idx) => idx <= maxIndex);
 });
 
 // All possible inversions for the dropdown
-const editInversions = ["root", "1st", "2nd", "3rd", "4th"];
+const editInversions = ["root", "1st", "2nd", "3rd", "4th", "5th", "6th"];
 const voicingTypeOptions = ["close", "open", "drop2", "drop3", "spread"];
-const isNonTertianChord = computed(() => {
-  const ext = currentExtension.value;
-  return ext === "sus2" || ext === "sus4";
-});
+const isNonTertianChord = computed(() => isSuspension(currentExtension.value));
 
 // Skip watcher side-effects while we restore a saved pad state
 const isApplyingPadState = ref(false);
@@ -398,7 +479,7 @@ const baseQualityFromScale = computed(() => {
   if (model.value.mode !== "scale") return "";
   const s = scaleNotes.value;
   if (!Array.isArray(s) || s.length < 3) return "";
-  const deg = Math.max(1, parseInt(stateScale.degree, 10) || 1);
+  const deg = degreeNumber(stateScale.degree);
   const i = (deg - 1) % s.length;
   // Stack diatonic thirds within the scale
   const triad = [s[i], s[(i + 2) % s.length], s[(i + 4) % s.length]];
@@ -408,64 +489,241 @@ const baseQualityFromScale = computed(() => {
 // Compute chord root from degree (scale mode) or free root
 const chordRootPc = computed(() => {
   if (model.value.mode === "scale") {
-    const idx = Math.max(0, (parseInt(stateScale.degree, 10) || 1) - 1);
+    const deg = degreeNumber(stateScale.degree);
+    const idx = Math.max(0, deg - 1);
     return scaleNotes.value[idx] || "C";
   }
   return stateFree.root || "C";
 });
 
-function buildChordSymbol(rootPc, isMinor, ext) {
-  const suffixMap = {
-    triad: "",
-    7: "7",
-    maj7: "maj7",
-    9: "9",
-    add9: "add9",
-    sus2: "sus2",
-    sus4: "sus4",
-  };
-  const suffix = suffixMap[ext] ?? "";
-  if (!isMinor) return `${rootPc}${suffix}`;
-  if (ext === "7") return `${rootPc}m7`;
-  if (ext === "9") return `${rootPc}m9`;
-  if (ext === "maj7") return `${rootPc}mMaj7`;
-  if (ext === "add9") return `${rootPc}madd9`;
-  if (ext === "sus2" || ext === "sus4") return `${rootPc}${suffix}`;
-  return `${rootPc}m${suffix}`;
+function determineScaleChordType(extOverride = stateScale.extension) {
+  const ext = extOverride || "triad";
+  if (isSuspension(ext)) return ext;
+  if (ext === "power") return "power";
+
+  const quality = baseQualityFromScale.value;
+  const deg = degreeNumber(stateScale.degree);
+
+  if (quality === "dim") {
+    if (ext === "7" || ext === "9") return "halfDiminished";
+    return "diminished";
+  }
+
+  if (quality === "aug") {
+    return "augmented";
+  }
+
+  if (quality === "m") {
+    if (ext === "6") return "minor6";
+    if (ext === "add9" && previousScaleExtension.value === "6")
+      return "minor6";
+    if (ext === "maj7" || ext === "maj9") return "minorMajor";
+    return "minor";
+  }
+
+  // Major quality (including dominant)
+  if (ext === "6") return "major6";
+  if (ext === "add9" && previousScaleExtension.value === "6")
+    return "major6";
+  if (ext === "7" || ext === "9")
+    return "dominant";
+  if (deg === 5) return "dominant";
+  return "major";
 }
 
-// Build symbol from explicit quality for scale mode
-function buildChordSymbolFromQuality(rootPc, quality, ext) {
-  // Suspensions ignore 3rd quality
-  if (ext === "sus2" || ext === "sus4") return `${rootPc}${ext}`;
-  if (ext === "triad") {
-    if (quality === "m") return `${rootPc}m`;
-    if (quality === "dim") return `${rootPc}dim`;
-    if (quality === "aug") return `${rootPc}aug`;
-    return `${rootPc}`;
+function determineFreeChordType(extOverride = stateFree.extension) {
+  const ext = extOverride || "triad";
+  const selection = stateFree.type || "major";
+
+  if (isSuspension(ext)) return ext;
+  if (ext === "power" || selection === "power") return "power";
+
+  if (selection === "sus2") return "sus2";
+  if (selection === "sus4") return "sus4";
+  if (selection === "augmented") return "augmented";
+  if (selection === "half-diminished") return "halfDiminished";
+  if (selection === "diminished") return "diminished";
+  if (selection === "dominant") return "dominant";
+
+  if (selection === "minor") {
+    if (ext === "6" || (ext === "add9" && previousFreeExtension.value === "6"))
+      return "minor6";
+    return "minor";
   }
-  if (ext === "7") {
-    if (quality === "m") return `${rootPc}m7`;
-    if (quality === "dim") return `${rootPc}m7b5`;
-    if (quality === "aug") return `${rootPc}7#5`;
-    return `${rootPc}7`;
+
+  // default to major-type behaviour
+  if (ext === "6" || (ext === "add9" && previousFreeExtension.value === "6"))
+    return "major6";
+  if (ext === "7" || ext === "9") return "dominant";
+  return "major";
+}
+
+function extensionNoteCount(ext, chordType) {
+  switch (ext) {
+    case "power":
+      return 2;
+    case "sus2":
+    case "sus4":
+      return 3;
+    case "triad":
+      return chordType === "power" ? 2 : 3;
+    case "6":
+      return 4;
+    case "7":
+    case "maj7":
+      return 4;
+    case "9":
+    case "maj9":
+      return 5;
+    case "add9":
+      return chordType === "major6" || chordType === "minor6" ? 5 : 4;
+    default:
+      return 3;
   }
-  if (ext === "maj7") {
-    if (quality === "m") return `${rootPc}mMaj7`;
-    if (quality === "aug") return `${rootPc}maj7#5`;
-    return `${rootPc}maj7`;
+}
+
+function buildChordSymbolForType(rootPc, chordType, ext) {
+  const value = ext || "triad";
+  switch (chordType) {
+    case "major":
+      switch (value) {
+        case "triad":
+          return `${rootPc}`;
+        case "6":
+          return `${rootPc}6`;
+        case "maj7":
+          return `${rootPc}maj7`;
+        case "maj9":
+          return `${rootPc}maj9`;
+        case "add9":
+          return `${rootPc}add9`;
+        default:
+          return `${rootPc}`;
+      }
+    case "major6":
+      if (value === "add9") return `${rootPc}6add9`;
+      return `${rootPc}6`;
+    case "dominant":
+      switch (value) {
+        case "7":
+          return `${rootPc}7`;
+        case "9":
+          return `${rootPc}9`;
+        case "add9":
+          return `${rootPc}add9`;
+        default:
+          return `${rootPc}7`;
+      }
+    case "minor":
+      switch (value) {
+        case "triad":
+          return `${rootPc}m`;
+        case "6":
+          return `${rootPc}m6`;
+        case "7":
+          return `${rootPc}m7`;
+        case "9":
+          return `${rootPc}m9`;
+        case "maj7":
+          return `${rootPc}mMaj7`;
+        case "maj9":
+          return `${rootPc}mMaj9`;
+        case "add9":
+          return `${rootPc}madd9`;
+        default:
+          return `${rootPc}m`;
+      }
+    case "minor6":
+      if (value === "add9") return `${rootPc}m6add9`;
+      return `${rootPc}m6`;
+    case "minorMajor":
+      if (value === "maj9") return `${rootPc}mMaj9`;
+      return `${rootPc}mMaj7`;
+    case "halfDiminished":
+      if (value === "9") return `${rootPc}m9b5`;
+      return `${rootPc}m7b5`;
+    case "augmented":
+      if (value === "maj7") return `${rootPc}maj7#5`;
+      if (value === "9") return `${rootPc}9#5`;
+      return `${rootPc}aug`;
+    case "sus2":
+      if (value === "add9") return `${rootPc}sus2add9`;
+      return `${rootPc}sus2`;
+    case "sus4":
+      if (value === "add9") return `${rootPc}sus4add9`;
+      return `${rootPc}sus4`;
+    case "power":
+      return `${rootPc}5`;
+    default:
+      return `${rootPc}`;
   }
-  if (ext === "9") {
-    if (quality === "m") return `${rootPc}m9`;
-    return `${rootPc}9`;
+}
+
+function mergeUniqueNotes(base, extras) {
+  const result = [];
+  const seen = new Set();
+  for (const note of base || []) {
+    const pc = Note.get(note)?.pc || note.replace(/[0-9]/g, "");
+    if (!seen.has(pc)) {
+      seen.add(pc);
+      result.push(note);
+    }
   }
-  if (ext === "add9") {
-    if (quality === "m") return `${rootPc}madd9`;
-    if (quality === "dim") return `${rootPc}dim`;
-    if (quality === "aug") return `${rootPc}aug`;
-    return `${rootPc}add9`;
+  for (const note of extras || []) {
+    const pc = Note.get(note)?.pc || note.replace(/[0-9]/g, "");
+    if (!seen.has(pc)) {
+      seen.add(pc);
+      result.push(note);
+    }
   }
-  return `${rootPc}`;
+  return result;
+}
+
+function getChordPitchClasses(rootPc, chordType, ext) {
+  const symbol = buildChordSymbolForType(rootPc, chordType, ext);
+  const pcs = Chord.get(symbol).notes;
+  if (pcs && pcs.length) {
+    return { symbol, pcs };
+  }
+
+  let fallbackNotes = [];
+  switch (chordType) {
+    case "major6":
+      if (ext === "add9") {
+        const base = Chord.get(`${rootPc}6`).notes;
+        const extra = Chord.get(`${rootPc}add9`).notes;
+        fallbackNotes = mergeUniqueNotes(base, extra);
+      }
+      break;
+    case "minor6":
+      if (ext === "add9") {
+        const base = Chord.get(`${rootPc}m6`).notes;
+        const extra = Chord.get(`${rootPc}madd9`).notes;
+        fallbackNotes = mergeUniqueNotes(base, extra);
+      }
+      break;
+    case "diminished":
+      if (ext === "9") {
+        const base = Chord.get(`${rootPc}dim7`).notes;
+        const extra = Chord.get(`${rootPc}m9b5`).notes;
+        fallbackNotes = mergeUniqueNotes(base, extra);
+      }
+      break;
+    case "sus2":
+      if (ext === "add9") {
+        fallbackNotes = Chord.get(`${rootPc}sus2`).notes;
+      }
+      break;
+    default:
+      break;
+  }
+
+  if (fallbackNotes && fallbackNotes.length) {
+    return { symbol, pcs: fallbackNotes };
+  }
+
+  const fallbackRoot = `${rootPc}`;
+  return { symbol, pcs: [fallbackRoot] };
 }
 
 function pcsToAscending(pcs, baseOct) {
@@ -520,7 +778,7 @@ function insertAscending(arr, note) {
 
 // Raise the lowest note per inversion step and keep stack ascending
 function applyInversion(notes, inversionLabel) {
-  const order = ["root", "1st", "2nd", "3rd", "4th"];
+  const order = ["root", "1st", "2nd", "3rd", "4th", "5th", "6th"];
   const steps = Math.max(0, order.indexOf(String(inversionLabel)));
   let res = sortByMidi(notes);
   for (let i = 0; i < steps; i++) {
@@ -571,27 +829,27 @@ function applyVoicing(notes, pattern) {
   return sortByMidi(out);
 }
 
-const previewChordSymbol = computed(() => {
-  const root = chordRootPc.value;
+const previewChordData = computed(() => {
   const ext = currentExtension.value || "triad";
-  if (model.value.mode === "scale") {
-    const q = baseQualityFromScale.value; // "", "m", "dim", "aug"
-    return buildChordSymbolFromQuality(root, q, ext);
-  }
-  const isMinor = stateFree.type === "minor";
-  return buildChordSymbol(root, isMinor, ext);
+  const root = chordRootPc.value;
+  const chordType =
+    model.value.mode === "scale"
+      ? determineScaleChordType(ext)
+      : determineFreeChordType(ext);
+  const chordInfo = getChordPitchClasses(root, chordType, ext);
+  return {
+    ...chordInfo,
+    chordType,
+    extension: ext,
+  };
 });
 
 const previewNotesAsc = computed(() => {
-  const pcs = Chord.get(previewChordSymbol.value).notes;
-  if (!pcs || pcs.length === 0)
-    return [`${chordRootPc.value}${currentOctave.value}`];
-  // Base ascending stack from selected octave
-  const base = pcsToAscending(pcs, currentOctave.value);
-  // Apply inversion (rotate lowest up) then voicing
+  const pcs = previewChordData.value.pcs;
+  const pitchClasses = pcs && pcs.length ? pcs : [chordRootPc.value];
+  const base = pcsToAscending(pitchClasses, currentOctave.value);
   const afterInv = applyInversion(base, currentInversion.value || "root");
   const afterVoicing = applyVoicing(afterInv, currentVoicing.value || "close");
-  // Always return ascending notes by pitch
   return sortByMidi(afterVoicing);
 });
 
@@ -600,7 +858,7 @@ const hasChordForPreview = computed(
 );
 const previewChordHtml = computed(() =>
   formatChordSymbol(
-    previewChordSymbol.value,
+    previewChordData.value.symbol,
     props.globalScaleRoot,
     props.globalScaleType
   )
@@ -630,18 +888,29 @@ function onClose() {
 function resetToDefaults() {
   // Reset mode and both mode states to defaults
   model.value.mode = "scale";
-  stateScale.degree = "1";
+  // Use first available degree from editChordOptions
+  const firstDegree = editChordOptions.value.length > 0 ? editChordOptions.value[0].degree : "I";
+  stateScale.degree = firstDegree;
   stateScale.octave = 4;
-  stateScale.extension = "triad";
+  const defaultScaleExt = extensionOptionsForType(
+    determineScaleChordType("triad")
+  )[0] ?? "triad";
+  stateScale.extension = defaultScaleExt;
   stateScale.inversion = "root";
   stateScale.voicing = "close";
 
   stateFree.root = "C";
   stateFree.type = "major";
   stateFree.octave = 4;
-  stateFree.extension = "triad";
+  const defaultFreeExt = extensionOptionsForType(
+    determineFreeChordType("triad")
+  )[0] ?? "triad";
+  stateFree.extension = defaultFreeExt;
   stateFree.inversion = "root";
   stateFree.voicing = "close";
+
+  previousScaleExtension.value = "triad";
+  previousFreeExtension.value = "triad";
 }
 
 // When the global scale changes, reset the edit selections to defaults
@@ -651,6 +920,48 @@ watch(
     resetToDefaults();
   },
   { immediate: false }
+);
+
+watch(
+  () => stateScale.extension,
+  (newExt, oldExt) => {
+    if (isApplyingPadState.value) return;
+    if (oldExt != null) previousScaleExtension.value = oldExt;
+  },
+  { flush: "sync" }
+);
+
+watch(
+  () => stateFree.extension,
+  (newExt, oldExt) => {
+    if (isApplyingPadState.value) return;
+    if (oldExt != null) previousFreeExtension.value = oldExt;
+  },
+  { flush: "sync" }
+);
+
+watch(
+  () => scaleExtensionOptions.value,
+  (opts) => {
+    if (isApplyingPadState.value) return;
+    if (!Array.isArray(opts) || opts.length === 0) return;
+    if (!opts.includes(stateScale.extension)) {
+      previousScaleExtension.value = stateScale.extension;
+      stateScale.extension = opts[0];
+    }
+  }
+);
+
+watch(
+  () => freeExtensionOptions.value,
+  (opts) => {
+    if (isApplyingPadState.value) return;
+    if (!Array.isArray(opts) || opts.length === 0) return;
+    if (!opts.includes(stateFree.extension)) {
+      previousFreeExtension.value = stateFree.extension;
+      stateFree.extension = opts[0];
+    }
+  }
 );
 
 // When extension changes, clamp inversion to valid range and reset voicing
@@ -679,21 +990,52 @@ watch(
   }
 );
 
-// When chord/root/type changes, reset extension, inversion, and voicing to defaults
+// When degree changes, reset scale-mode defaults
 watch(
-  () => [stateScale.degree, stateFree.root, stateFree.type],
+  () => stateScale.degree,
   () => {
     if (isApplyingPadState.value) return;
-    if (model.value.mode === "scale") {
-      stateScale.extension = "triad";
-      stateScale.inversion = "root";
-      stateScale.voicing = "close";
-    } else {
-      stateFree.extension = "triad";
-      stateFree.inversion = "root";
-      stateFree.voicing = "close";
+    const defaultType = determineScaleChordType("triad");
+    const options = extensionOptionsForType(defaultType);
+    const nextExtension = options[0] ?? "triad";
+    if (stateScale.extension !== nextExtension) {
+      previousScaleExtension.value = stateScale.extension;
+      stateScale.extension = nextExtension;
     }
+    stateScale.inversion = "root";
+    stateScale.voicing = "close";
   }
+);
+
+// When free-mode root or type changes, reset defaults
+watch(
+  () => [stateFree.root, stateFree.type],
+  () => {
+    if (isApplyingPadState.value) return;
+    const defaultType = determineFreeChordType("triad");
+    const options = extensionOptionsForType(defaultType);
+    const nextExtension = options[0] ?? "triad";
+    if (stateFree.extension !== nextExtension) {
+      previousFreeExtension.value = stateFree.extension;
+      stateFree.extension = nextExtension;
+    }
+    stateFree.inversion = "root";
+    stateFree.voicing = "close";
+  }
+);
+
+watch(
+  () => editChordOptions.value,
+  (opts) => {
+    if (!opts || opts.length === 0) return;
+    const normalizedCurrent = normalizeDegree(stateScale.degree);
+    if (opts.some((o) => o.degree === normalizedCurrent)) {
+      stateScale.degree = normalizedCurrent;
+      return;
+    }
+    stateScale.degree = opts[0].degree;
+  },
+  { immediate: true }
 );
 
 defineExpose({ open, close, dlg, resetToDefaults });
@@ -740,7 +1082,8 @@ function applyPadState(s) {
   // Assigned pad: apply saved state
   if (s.mode === "scale" || s.mode === "free") model.value.mode = s.mode;
   if (s.scale && typeof s.scale === "object") {
-    if (s.scale.degree != null) stateScale.degree = String(s.scale.degree);
+    if (s.scale.degree != null)
+      stateScale.degree = normalizeDegree(s.scale.degree);
     if (s.scale.octave != null) stateScale.octave = Number(s.scale.octave);
     if (s.scale.extension) stateScale.extension = String(s.scale.extension);
     if (s.scale.inversion) stateScale.inversion = String(s.scale.inversion);
@@ -754,6 +1097,9 @@ function applyPadState(s) {
     if (s.free.inversion) stateFree.inversion = String(s.free.inversion);
     if (s.free.voicing) stateFree.voicing = String(s.free.voicing);
   }
+
+  previousScaleExtension.value = stateScale.extension;
+  previousFreeExtension.value = stateFree.extension;
 
   nextTick(() => {
     isApplyingPadState.value = false;
@@ -772,7 +1118,7 @@ const isDirty = computed(() => {
   const current = {
     mode: model.value.mode,
     scale: {
-      degree: String(stateScale.degree),
+      degree: normalizeDegree(stateScale.degree),
       octave: Number(stateScale.octave),
       extension: String(stateScale.extension),
       inversion: String(stateScale.inversion),
@@ -790,7 +1136,7 @@ const isDirty = computed(() => {
   const base = {
     mode: s.mode ?? "scale",
     scale: {
-      degree: String(s?.scale?.degree ?? "1"),
+      degree: normalizeDegree(s?.scale?.degree ?? "1"),
       octave: Number(s?.scale?.octave ?? 4),
       extension: String(s?.scale?.extension ?? "triad"),
       inversion: String(s?.scale?.inversion ?? "root"),
