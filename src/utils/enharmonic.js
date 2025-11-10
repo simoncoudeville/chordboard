@@ -30,6 +30,29 @@ function accidentalScore(note = "") {
 }
 
 /**
+ * Simplify a note name by mapping it to its nearest enharmonic equivalent.
+ * Returns the input unchanged if Tonal cannot parse the note.
+ */
+export function simplifyNoteName(note) {
+  if (!note) return note;
+  const info = Note.get(note);
+  if (!info || (!info.name && !info.pc)) return note;
+
+  const baseName = info.name || info.pc || note;
+  const { alt, oct } = info;
+  if (typeof alt === "number" && Math.abs(alt) <= 1) {
+    return baseName;
+  }
+
+  const enh = Note.enharmonic(baseName);
+  if (!enh) return baseName;
+
+  const enhHasOctave = /\d$/.test(enh);
+  if (enhHasOctave) return enh;
+  return typeof oct === "number" ? `${enh}${oct}` : enh;
+}
+
+/**
  * Determine the preferred enharmonic spelling for the given scale root/type.
  * Uses Tonal.js to get the canonical tonic from the scale.
  */
@@ -61,7 +84,8 @@ export function formatScaleName(root, type = "major") {
 export function formatNoteName(note, globalScale = "C", scaleType = "major") {
   if (!note) return "";
 
-  const info = Note.get(note);
+  const simplified = simplifyNoteName(note);
+  const info = Note.get(simplified);
   if (!info || !info.pc) return note;
 
   const pc = info.pc;
@@ -109,11 +133,10 @@ export function formatChordSymbol(
   // Extract root note (everything before the first lowercase letter, number, or special char)
   const match = chordSymbol.match(/^([A-G][#b]?)/);
   if (!match) return chordSymbol;
-  
+
   const root = match[1];
   const suffix = chordSymbol.slice(root.length);
 
   const formattedRoot = formatNoteName(root, globalScale, scaleType);
   return formattedRoot + suffix;
 }
-

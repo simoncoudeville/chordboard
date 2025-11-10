@@ -199,13 +199,20 @@ import EditDialog from "./components/EditDialog.vue";
 import MidiDialog from "./components/MidiDialog.vue";
 import GlobalKeyDialog from "./components/GlobalKeyDialog.vue";
 import { useMidi } from "./composables/useMidi";
-import { Scale, Chord, Note } from "@tonaljs/tonal";
+import { Scale, Note } from "@tonaljs/tonal";
+import {
+  DEFAULT_EXTENSION,
+  normalizeChordType,
+  normalizeExtension,
+  buildChordDefinition,
+} from "./utils/chordSystem";
 import { pcToKeyToken } from "./utils/music";
 import {
   formatNoteName,
   formatChordSymbol,
   preferredScaleRoot,
   formatScaleName,
+  simplifyNoteName,
 } from "./utils/enharmonic";
 
 const {
@@ -270,9 +277,8 @@ const globalScaleDisplayName = computed(() =>
 const globalScaleNotes = computed(() => {
   try {
     return (
-      Scale.get(
-        `${preferredGlobalScaleRoot.value} ${globalScaleType.value}`
-      ).notes || []
+      Scale.get(`${preferredGlobalScaleRoot.value} ${globalScaleType.value}`)
+        .notes || []
     );
   } catch {
     return [];
@@ -423,7 +429,7 @@ function defaultPad() {
     scale: {
       degree: "1",
       octave: 4,
-      extension: "triad",
+      extension: DEFAULT_EXTENSION,
       inversion: "root",
       voicing: "close",
     },
@@ -431,7 +437,7 @@ function defaultPad() {
       root: "C",
       type: "major",
       octave: 4,
-      extension: "triad",
+      extension: DEFAULT_EXTENSION,
       inversion: "root",
       voicing: "close",
     },
@@ -577,56 +583,9 @@ function qualityForDegree(index) {
   return qualityFromTriad(triad, s[i]);
 }
 
-function buildChordSymbol(rootPc, isMinor, ext) {
-  const suffixMap = {
-    triad: "",
-    7: "7",
-    maj7: "maj7",
-    9: "9",
-    add9: "add9",
-    sus2: "sus2",
-    sus4: "sus4",
-  };
-  const suffix = suffixMap[ext] ?? "";
-  if (!isMinor) return `${rootPc}${suffix}`;
-  if (ext === "7") return `${rootPc}m7`;
-  if (ext === "9") return `${rootPc}m9`;
-  if (ext === "maj7") return `${rootPc}mMaj7`;
-  if (ext === "add9") return `${rootPc}madd9`;
-  if (ext === "sus2" || ext === "sus4") return `${rootPc}${suffix}`;
-  return `${rootPc}m${suffix}`;
-}
-
-function buildChordSymbolFromQuality(rootPc, quality, ext) {
-  if (ext === "sus2" || ext === "sus4") return `${rootPc}${ext}`;
-  if (ext === "triad") {
-    if (quality === "m") return `${rootPc}m`;
-    if (quality === "dim") return `${rootPc}dim`;
-    if (quality === "aug") return `${rootPc}aug`;
-    return `${rootPc}`;
-  }
-  if (ext === "7") {
-    if (quality === "m") return `${rootPc}m7`;
-    if (quality === "dim") return `${rootPc}m7b5`;
-    if (quality === "aug") return `${rootPc}7#5`;
-    return `${rootPc}7`;
-  }
-  if (ext === "maj7") {
-    if (quality === "m") return `${rootPc}mMaj7`;
-    if (quality === "aug") return `${rootPc}maj7#5`;
-    return `${rootPc}maj7`;
-  }
-  if (ext === "9") {
-    if (quality === "m") return `${rootPc}m9`;
-    return `${rootPc}9`;
-  }
-  if (ext === "add9") {
-    if (quality === "m") return `${rootPc}madd9`;
-    if (quality === "dim") return `${rootPc}dim`;
-    if (quality === "aug") return `${rootPc}aug`;
-    return `${rootPc}add9`;
-  }
-  return `${rootPc}`;
+function buildChordSymbol(rootPc, type, extension) {
+  const definition = buildChordDefinition(rootPc, type, extension);
+  return definition.displaySymbol;
 }
 
 function pcsToAscending(pcs, baseOct) {
@@ -730,23 +689,51 @@ function applyVoicing(notes, pattern) {
   return sortByMidi(out);
 }
 
-function padChordSymbol(pad) {
-  if (!pad || pad.mode === "unassigned" || pad.assigned === false) return "";
+function simplifyNoteList(notes) {
+  if (!Array.isArray(notes)) return [];
+  return notes.map((n) => simplifyNoteName(n));
+}
+
+function chordRootForPad(pad) {
+  if (!pad) return "C";
   if (pad.mode === "scale") {
     const s = Array.isArray(globalScaleNotes.value)
       ? globalScaleNotes.value
       : [];
     const deg = Math.max(1, parseInt(pad?.scale?.degree ?? "1", 10) || 1);
     const i = (deg - 1) % (s.length || 7);
-    const rootPc = s[i] || "C";
-    const q = qualityForDegree(i);
-    const ext = pad?.scale?.extension || "triad";
-    return buildChordSymbolFromQuality(rootPc, q, ext);
+    return s[i] || "C";
+  }
+  return pad?.free?.root || "C";
+}
+
+function currentScaleIndex(pad) {
+  if (!pad || pad.mode !== "scale") return 0;
+  const s = Array.isArray(globalScaleNotes.value) ? globalScaleNotes.value : [];
+  const deg = Math.max(1, parseInt(pad?.scale?.degree ?? "1", 10) || 1);
+  return (deg - 1) % (s.length || 7);
+}
+
+function padChordSymbol(pad) {
+  if (!pad || pad.mode === "unassigned" || pad.assigned === false) return "";
+  if (pad.mode === "scale") {
+    const rootPc = chordRootForPad(pad);
+    const q = qualityForDegree(currentScaleIndex(pad));
+    const type =
+      q === "m"
+        ? "minor"
+        : q === "dim"
+        ? "diminished"
+        : q === "aug"
+        ? "augmented"
+        : "major";
+    const ext = normalizeExtension(pad?.scale?.extension);
+    return buildChordSymbol(rootPc, type, ext);
   } else if (pad.mode === "free") {
     const rootPc = pad?.free?.root || "C";
-    const isMinor = (pad?.free?.type || "major") === "minor";
-    const ext = pad?.free?.extension || "triad";
-    return buildChordSymbol(rootPc, isMinor, ext);
+    const type = normalizeChordType(pad?.free?.type);
+    const ext = normalizeExtension(pad?.free?.extension);
+    return buildChordSymbol(rootPc, type, ext);
   }
   return "";
 }
@@ -761,7 +748,20 @@ function padBaseOctave(pad) {
 function padNotes(pad) {
   const symbol = padChordSymbol(pad);
   if (!symbol) return [];
-  const pcs = Chord.get(symbol).notes || [];
+  const type =
+    pad.mode === "scale"
+      ? normalizeChordType(qualityForDegree(currentScaleIndex(pad)))
+      : normalizeChordType(pad?.free?.type);
+  const extension =
+    pad.mode === "scale"
+      ? normalizeExtension(pad?.scale?.extension)
+      : normalizeExtension(pad?.free?.extension);
+  const definition = buildChordDefinition(
+    chordRootForPad(pad),
+    type,
+    extension
+  );
+  const pcs = definition.notes;
   const oct = padBaseOctave(pad);
   if (!pcs.length) {
     const rootPc = symbol.replace(/[^A-G#b].*$/, "");
@@ -793,7 +793,8 @@ const activePadNotes = reactive({});
 function onStartPad(idx) {
   try {
     const pad = pads.value?.[idx];
-    const notes = padNotes(pad);
+    const rawNotes = padNotes(pad);
+    const notes = simplifyNoteList(rawNotes);
     if (!notes.length) return;
     const sel = getSelectedChannel();
     const ch = sel?.ch;
@@ -840,7 +841,8 @@ const lastPlayedNotes = ref([]);
 
 function onPreviewStart(payload) {
   try {
-    const notes = Array.isArray(payload?.notes) ? payload.notes : [];
+    const rawNotes = Array.isArray(payload?.notes) ? payload.notes : [];
+    const notes = simplifyNoteList(rawNotes);
     if (!notes.length) return;
     const sel = getSelectedChannel();
     const ch = sel?.ch;
@@ -889,9 +891,9 @@ const activeNoteNames = computed(() => {
   );
   // If no pads are currently playing, show the last played chord
   if (fromPads.length === 0 && lastPlayedNotes.value.length > 0) {
-    return lastPlayedNotes.value;
+    return simplifyNoteList(lastPlayedNotes.value);
   }
-  return fromPads;
+  return simplifyNoteList(fromPads);
 });
 
 // Active keys as a Set of lowercase pitch-class tokens for Keyboard.vue

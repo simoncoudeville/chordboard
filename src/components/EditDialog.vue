@@ -50,7 +50,7 @@
               :stroke-width="1"
               :absoluteStrokeWidth="true"
             />
-            Global scale: <span>{{ globalScaleDisplay }}</span>            
+            Global scale: <span>{{ globalScaleDisplay }}</span>
           </p>
         </div>
       </template>
@@ -153,7 +153,7 @@
             @pointerdown.prevent.stop="
               $emit('preview-start', {
                 event: $event,
-                notes: previewNotesAsc,
+                notes: previewNotesPlayable,
               })
             "
             @pointerup.prevent.stop="$emit('preview-stop', { event: $event })"
@@ -174,7 +174,7 @@
           </button>
         </div>
         <KeyboardExtended
-          :highlighted-notes="previewNotesAsc"
+          :highlighted-notes="previewNotesPlayable"
           :start-octave="1"
           :octaves="7"
         />
@@ -185,7 +185,7 @@
           @pointerdown.prevent.stop="
             $emit('preview-start', {
               event: $event,
-              notes: previewNotesAsc,
+              notes: previewNotesPlayable,
             })
           "
           @pointerup.prevent.stop="$emit('preview-stop', { event: $event })"
@@ -216,8 +216,21 @@ import { ref, computed, reactive, watch, nextTick } from "vue";
 import { X, Music2, Volume1, Headphones } from "lucide-vue-next";
 import CustomSelect from "./CustomSelect.vue";
 import KeyboardExtended from "./KeyboardExtended.vue";
-import { Scale, Chord, Note } from "@tonaljs/tonal";
-import { formatNoteName, formatChordSymbol } from "../utils/enharmonic";
+import { Scale, Note } from "@tonaljs/tonal";
+import {
+  formatNoteName,
+  formatChordSymbol,
+  simplifyNoteName,
+} from "../utils/enharmonic";
+import {
+  DEFAULT_EXTENSION,
+  allowedExtensionsForChordType,
+  normalizeChordType,
+  normalizeExtension,
+  chordIsNonTertian,
+  buildChordDefinition,
+  chordNoteCount,
+} from "../utils/chordSystem";
 
 // Keep padIndex so the title continues to work; expose open/close for parent
 const props = defineProps({
@@ -244,7 +257,7 @@ const model = ref({ mode: "scale" });
 const stateScale = reactive({
   degree: "1", // default to tonic degree
   octave: 4,
-  extension: "triad",
+  extension: DEFAULT_EXTENSION,
   inversion: "root",
   voicing: "close",
 });
@@ -253,13 +266,13 @@ const stateFree = reactive({
   root: "C",
   type: "major", // or "minor"
   octave: 4,
-  extension: "triad",
+  extension: DEFAULT_EXTENSION,
   inversion: "root",
   voicing: "close",
 });
 
-const previousScaleExtension = ref("triad");
-const previousFreeExtension = ref("triad");
+const previousScaleExtension = ref(DEFAULT_EXTENSION);
+const previousFreeExtension = ref(DEFAULT_EXTENSION);
 
 // Mode-bridged computed bindings for shared controls
 const currentOctave = computed({
@@ -274,8 +287,9 @@ const currentExtension = computed({
   get: () =>
     model.value.mode === "scale" ? stateScale.extension : stateFree.extension,
   set: (v) => {
-    if (model.value.mode === "scale") stateScale.extension = v;
-    else stateFree.extension = v;
+    const normalized = normalizeExtensionValue(v);
+    if (model.value.mode === "scale") stateScale.extension = normalized;
+    else stateFree.extension = normalized;
   },
 });
 const currentInversion = computed({
@@ -400,55 +414,40 @@ const rootOptions = computed(() => {
 });
 const FREE_TYPE_OPTIONS = Object.freeze([
   { value: "major", label: "Major" },
-  { value: "dominant", label: "Dominant" },
   { value: "minor", label: "Minor" },
   { value: "diminished", label: "Diminished" },
-  { value: "half-diminished", label: "Half diminished" },
+  { value: "halfDiminished", label: "Half diminished" },
   { value: "augmented", label: "Augmented" },
   { value: "sus2", label: "Sus2" },
   { value: "sus4", label: "Sus4" },
-  { value: "power", label: "Power" },
+  { value: "power", label: "Power (5)" },
 ]);
 const freeTypeOptions = FREE_TYPE_OPTIONS;
-const CHORD_TYPE_EXTENSION_OPTIONS = Object.freeze({
-  major: ["triad", "6", "7", "maj7", "maj9", "add9"],
-  minor: [
-    "triad",
-    "6",
-    "7",
-    "9",
-    "add9",
-  ],
-  dominant: ["7", "9", "add9"],
-  diminished: ["triad", "7", "9"],
-  halfDiminished: ["7", "9"],
-  augmented: ["triad", "maj7", "9"],
-  minorMajor: ["maj7", "maj9"],
-  major6: ["6", "add9"],
-  minor6: ["6", "add9"],
-  sus2: ["sus2", "add9"],
-  sus4: ["sus4", "add9"],
-  power: ["power"],
-});
-
+const FREE_TYPE_VALUE_SET = new Set(freeTypeOptions.map((opt) => opt.value));
 function extensionOptionsForType(type) {
-  const opts = CHORD_TYPE_EXTENSION_OPTIONS[type];
-  return opts && opts.length ? [...opts] : ["triad"];
+  return allowedExtensionsForChordType(type);
 }
 
-function isSuspension(ext) {
-  return ext === "sus2" || ext === "sus4";
+function normalizeFreeTypeValue(value) {
+  const normalized = normalizeChordType(value);
+  return FREE_TYPE_VALUE_SET.has(normalized) ? normalized : "major";
 }
 
-const scaleChordType = computed(() => determineScaleChordType(stateScale.extension));
-const freeChordType = computed(() => determineFreeChordType(stateFree.extension));
-const scaleBaseChordType = computed(() => determineScaleChordType("triad"));
-const freeBaseChordType = computed(() => determineFreeChordType("triad"));
+function normalizeExtensionValue(value) {
+  return normalizeExtension(value);
+}
+
+function allowedExtensionsForFreeType(baseType) {
+  return allowedExtensionsForChordType(normalizeFreeTypeValue(baseType));
+}
+
+const scaleChordType = computed(() => determineScaleChordType());
+const freeChordType = computed(() => normalizeFreeTypeValue(stateFree.type));
 const scaleExtensionOptions = computed(() =>
-  extensionOptionsForType(scaleBaseChordType.value)
+  extensionOptionsForType(scaleChordType.value)
 );
 const freeExtensionOptions = computed(() =>
-  extensionOptionsForType(freeBaseChordType.value)
+  allowedExtensionsForFreeType(stateFree.type)
 );
 const extensionOptions = computed(() =>
   model.value.mode === "scale"
@@ -461,7 +460,7 @@ const validInversions = computed(() => {
   const ext = currentExtension.value;
   const chordType =
     model.value.mode === "scale" ? scaleChordType.value : freeChordType.value;
-  const noteCount = extensionNoteCount(ext, chordType);
+  const noteCount = extensionNoteCount(ext, chordType, chordRootPc.value);
   const maxIndex = Math.max(0, noteCount - 1);
   return editInversions.filter((_, idx) => idx <= maxIndex);
 });
@@ -469,7 +468,11 @@ const validInversions = computed(() => {
 // All possible inversions for the dropdown
 const editInversions = ["root", "1st", "2nd", "3rd", "4th", "5th", "6th"];
 const voicingTypeOptions = ["close", "open", "drop2", "drop3", "spread"];
-const isNonTertianChord = computed(() => isSuspension(currentExtension.value));
+const isNonTertianChord = computed(() => {
+  const baseType =
+    model.value.mode === "scale" ? scaleChordType.value : freeChordType.value;
+  return chordIsNonTertian(baseType);
+});
 
 // Skip watcher side-effects while we restore a saved pad state
 const isApplyingPadState = ref(false);
@@ -496,234 +499,113 @@ const chordRootPc = computed(() => {
   return stateFree.root || "C";
 });
 
-function determineScaleChordType(extOverride = stateScale.extension) {
-  const ext = extOverride || "triad";
-  if (isSuspension(ext)) return ext;
-  if (ext === "power") return "power";
-
+function determineScaleChordType() {
   const quality = baseQualityFromScale.value;
-  const deg = degreeNumber(stateScale.degree);
-
-  if (quality === "dim") {
-    if (ext === "7" || ext === "9") return "halfDiminished";
-    return "diminished";
-  }
-
-  if (quality === "aug") {
-    return "augmented";
-  }
-
-  if (quality === "m") {
-    if (ext === "6") return "minor6";
-    if (ext === "add9" && previousScaleExtension.value === "6")
-      return "minor6";
-    if (ext === "maj7" || ext === "maj9") return "minorMajor";
-    return "minor";
-  }
-
-  // Major quality (including dominant)
-  if (ext === "6") return "major6";
-  if (ext === "add9" && previousScaleExtension.value === "6")
-    return "major6";
-  if (ext === "7" || ext === "9")
-    return "dominant";
-  if (deg === 5) return "dominant";
-  return "major";
-}
-
-function determineFreeChordType(extOverride = stateFree.extension) {
-  const ext = extOverride || "triad";
-  const selection = stateFree.type || "major";
-
-  if (isSuspension(ext)) return ext;
-  if (ext === "power" || selection === "power") return "power";
-
-  if (selection === "sus2") return "sus2";
-  if (selection === "sus4") return "sus4";
-  if (selection === "augmented") return "augmented";
-  if (selection === "half-diminished") return "halfDiminished";
-  if (selection === "diminished") return "diminished";
-  if (selection === "dominant") return "dominant";
-
-  if (selection === "minor") {
-    if (ext === "6" || (ext === "add9" && previousFreeExtension.value === "6"))
-      return "minor6";
-    return "minor";
-  }
-
-  // default to major-type behaviour
-  if (ext === "6" || (ext === "add9" && previousFreeExtension.value === "6"))
-    return "major6";
-  if (ext === "7" || ext === "9") return "dominant";
-  return "major";
-}
-
-function extensionNoteCount(ext, chordType) {
-  switch (ext) {
-    case "power":
-      return 2;
-    case "sus2":
-    case "sus4":
-      return 3;
-    case "triad":
-      return chordType === "power" ? 2 : 3;
-    case "6":
-      return 4;
-    case "7":
-    case "maj7":
-      return 4;
-    case "9":
-    case "maj9":
-      return 5;
-    case "add9":
-      return chordType === "major6" || chordType === "minor6" ? 5 : 4;
+  switch (quality) {
+    case "m":
+      return "minor";
+    case "dim":
+      return "diminished";
+    case "aug":
+      return "augmented";
     default:
-      return 3;
+      return "major";
   }
 }
 
-function buildChordSymbolForType(rootPc, chordType, ext) {
-  const value = ext || "triad";
-  switch (chordType) {
+function extensionNoteCount(ext, chordType, rootPc) {
+  const info = getChordPitchClasses(rootPc || "C", chordType, ext);
+  return Array.isArray(info.pcs) ? info.pcs.length : 0;
+}
+
+function buildChordRepresentation(rootPc, chordType, ext) {
+  const baseType = normalizeFreeTypeValue(chordType);
+  const value = normalizeExtensionValue(ext);
+  const create = (display, tonal = display) => ({ display, tonal });
+
+  switch (baseType) {
     case "major":
       switch (value) {
-        case "triad":
-          return `${rootPc}`;
+        case "none":
+          return create(`${rootPc}`);
         case "6":
-          return `${rootPc}6`;
+          return create(`${rootPc}6`);
         case "maj7":
-          return `${rootPc}maj7`;
+          return create(`${rootPc}maj7`);
         case "maj9":
-          return `${rootPc}maj9`;
+          return create(`${rootPc}maj9`);
         case "add9":
-          return `${rootPc}add9`;
-        default:
-          return `${rootPc}`;
-      }
-    case "major6":
-      if (value === "add9") return `${rootPc}6add9`;
-      return `${rootPc}6`;
-    case "dominant":
-      switch (value) {
+          return create(`${rootPc}add9`);
         case "7":
-          return `${rootPc}7`;
+          return create(`${rootPc}7`);
         case "9":
-          return `${rootPc}9`;
-        case "add9":
-          return `${rootPc}add9`;
+          return create(`${rootPc}9`);
+        case "13":
+          return create(`${rootPc}13`);
         default:
-          return `${rootPc}7`;
+          return create(`${rootPc}`);
       }
     case "minor":
       switch (value) {
-        case "triad":
-          return `${rootPc}m`;
+        case "none":
+          return create(`${rootPc}m`);
         case "6":
-          return `${rootPc}m6`;
+          return create(`${rootPc}m6`);
         case "7":
-          return `${rootPc}m7`;
+          return create(`${rootPc}m7`);
         case "9":
-          return `${rootPc}m9`;
-        case "maj7":
-          return `${rootPc}mMaj7`;
-        case "maj9":
-          return `${rootPc}mMaj9`;
+          return create(`${rootPc}m9`);
+        case "11":
+          return create(`${rootPc}m11`);
+        case "13":
+          return create(`${rootPc}m13`);
         case "add9":
-          return `${rootPc}madd9`;
+          return create(`${rootPc}madd9`);
         default:
-          return `${rootPc}m`;
+          return create(`${rootPc}m`);
       }
-    case "minor6":
-      if (value === "add9") return `${rootPc}m6add9`;
-      return `${rootPc}m6`;
-    case "minorMajor":
-      if (value === "maj9") return `${rootPc}mMaj9`;
-      return `${rootPc}mMaj7`;
+    case "diminished":
+      switch (value) {
+        case "none":
+          return create(`${rootPc}dim`);
+        case "7":
+          return create(`${rootPc}dim7`);
+        default:
+          return create(`${rootPc}dim`);
+      }
     case "halfDiminished":
-      if (value === "9") return `${rootPc}m9b5`;
-      return `${rootPc}m7b5`;
+      return create(`${rootPc}m7b5`);
     case "augmented":
-      if (value === "maj7") return `${rootPc}maj7#5`;
-      if (value === "9") return `${rootPc}9#5`;
-      return `${rootPc}aug`;
+      switch (value) {
+        case "none":
+          return create(`${rootPc}aug`);
+        case "maj7":
+          return create(`${rootPc}maj7#5`);
+        case "9":
+          return create(`${rootPc}9#5`);
+        default:
+          return create(`${rootPc}aug`);
+      }
     case "sus2":
-      if (value === "add9") return `${rootPc}sus2add9`;
-      return `${rootPc}sus2`;
+      if (value === "add9") return create(`${rootPc}sus2add9`, `${rootPc}sus2`);
+      return create(`${rootPc}sus2`);
     case "sus4":
-      if (value === "add9") return `${rootPc}sus4add9`;
-      return `${rootPc}sus4`;
+      if (value === "add9") return create(`${rootPc}sus4add9`, `${rootPc}sus4`);
+      return create(`${rootPc}sus4`);
     case "power":
-      return `${rootPc}5`;
+      return create(`${rootPc}5`);
     default:
-      return `${rootPc}`;
+      return create(`${rootPc}`);
   }
-}
-
-function mergeUniqueNotes(base, extras) {
-  const result = [];
-  const seen = new Set();
-  for (const note of base || []) {
-    const pc = Note.get(note)?.pc || note.replace(/[0-9]/g, "");
-    if (!seen.has(pc)) {
-      seen.add(pc);
-      result.push(note);
-    }
-  }
-  for (const note of extras || []) {
-    const pc = Note.get(note)?.pc || note.replace(/[0-9]/g, "");
-    if (!seen.has(pc)) {
-      seen.add(pc);
-      result.push(note);
-    }
-  }
-  return result;
 }
 
 function getChordPitchClasses(rootPc, chordType, ext) {
-  const symbol = buildChordSymbolForType(rootPc, chordType, ext);
-  const pcs = Chord.get(symbol).notes;
-  if (pcs && pcs.length) {
-    return { symbol, pcs };
-  }
-
-  let fallbackNotes = [];
-  switch (chordType) {
-    case "major6":
-      if (ext === "add9") {
-        const base = Chord.get(`${rootPc}6`).notes;
-        const extra = Chord.get(`${rootPc}add9`).notes;
-        fallbackNotes = mergeUniqueNotes(base, extra);
-      }
-      break;
-    case "minor6":
-      if (ext === "add9") {
-        const base = Chord.get(`${rootPc}m6`).notes;
-        const extra = Chord.get(`${rootPc}madd9`).notes;
-        fallbackNotes = mergeUniqueNotes(base, extra);
-      }
-      break;
-    case "diminished":
-      if (ext === "9") {
-        const base = Chord.get(`${rootPc}dim7`).notes;
-        const extra = Chord.get(`${rootPc}m9b5`).notes;
-        fallbackNotes = mergeUniqueNotes(base, extra);
-      }
-      break;
-    case "sus2":
-      if (ext === "add9") {
-        fallbackNotes = Chord.get(`${rootPc}sus2`).notes;
-      }
-      break;
-    default:
-      break;
-  }
-
-  if (fallbackNotes && fallbackNotes.length) {
-    return { symbol, pcs: fallbackNotes };
-  }
-
-  const fallbackRoot = `${rootPc}`;
-  return { symbol, pcs: [fallbackRoot] };
+  const definition = buildChordDefinition(rootPc, chordType, ext);
+  return {
+    symbol: definition.displaySymbol,
+    tonalSymbol: definition.tonalSymbol,
+    pcs: definition.notes,
+  };
 }
 
 function pcsToAscending(pcs, baseOct) {
@@ -830,12 +712,10 @@ function applyVoicing(notes, pattern) {
 }
 
 const previewChordData = computed(() => {
-  const ext = currentExtension.value || "triad";
+  const ext = normalizeExtensionValue(currentExtension.value);
   const root = chordRootPc.value;
   const chordType =
-    model.value.mode === "scale"
-      ? determineScaleChordType(ext)
-      : determineFreeChordType(ext);
+    model.value.mode === "scale" ? scaleChordType.value : freeChordType.value;
   const chordInfo = getChordPitchClasses(root, chordType, ext);
   return {
     ...chordInfo,
@@ -853,8 +733,12 @@ const previewNotesAsc = computed(() => {
   return sortByMidi(afterVoicing);
 });
 
+const previewNotesPlayable = computed(() =>
+  (previewNotesAsc.value || []).map((n) => simplifyNoteName(n))
+);
+
 const hasChordForPreview = computed(
-  () => (previewNotesAsc.value?.length ?? 0) > 0
+  () => (previewNotesPlayable.value?.length ?? 0) > 0
 );
 const previewChordHtml = computed(() =>
   formatChordSymbol(
@@ -864,7 +748,7 @@ const previewChordHtml = computed(() =>
   )
 );
 const previewNotesHtml = computed(() => {
-  const notes = previewNotesAsc.value || [];
+  const notes = previewNotesPlayable.value || [];
   const formatted = notes.map((n) =>
     formatNoteName(n, props.globalScaleRoot, props.globalScaleType)
   );
@@ -889,12 +773,13 @@ function resetToDefaults() {
   // Reset mode and both mode states to defaults
   model.value.mode = "scale";
   // Use first available degree from editChordOptions
-  const firstDegree = editChordOptions.value.length > 0 ? editChordOptions.value[0].degree : "I";
+  const firstDegree =
+    editChordOptions.value.length > 0 ? editChordOptions.value[0].degree : "I";
   stateScale.degree = firstDegree;
   stateScale.octave = 4;
-  const defaultScaleExt = extensionOptionsForType(
-    determineScaleChordType("triad")
-  )[0] ?? "triad";
+  const defaultScaleExt = normalizeExtensionValue(
+    extensionOptionsForType(determineScaleChordType())[0] ?? DEFAULT_EXTENSION
+  );
   stateScale.extension = defaultScaleExt;
   stateScale.inversion = "root";
   stateScale.voicing = "close";
@@ -902,15 +787,15 @@ function resetToDefaults() {
   stateFree.root = "C";
   stateFree.type = "major";
   stateFree.octave = 4;
-  const defaultFreeExt = extensionOptionsForType(
-    determineFreeChordType("triad")
-  )[0] ?? "triad";
+  const defaultFreeExt = normalizeExtensionValue(
+    allowedExtensionsForFreeType(stateFree.type)[0] ?? DEFAULT_EXTENSION
+  );
   stateFree.extension = defaultFreeExt;
   stateFree.inversion = "root";
   stateFree.voicing = "close";
 
-  previousScaleExtension.value = "triad";
-  previousFreeExtension.value = "triad";
+  previousScaleExtension.value = DEFAULT_EXTENSION;
+  previousFreeExtension.value = DEFAULT_EXTENSION;
 }
 
 // When the global scale changes, reset the edit selections to defaults
@@ -945,9 +830,12 @@ watch(
   (opts) => {
     if (isApplyingPadState.value) return;
     if (!Array.isArray(opts) || opts.length === 0) return;
-    if (!opts.includes(stateScale.extension)) {
+    const normalizedCurrent = normalizeExtensionValue(stateScale.extension);
+    if (!opts.includes(normalizedCurrent)) {
       previousScaleExtension.value = stateScale.extension;
-      stateScale.extension = opts[0];
+      stateScale.extension = normalizeExtensionValue(
+        opts[0] ?? DEFAULT_EXTENSION
+      );
     }
   }
 );
@@ -957,9 +845,20 @@ watch(
   (opts) => {
     if (isApplyingPadState.value) return;
     if (!Array.isArray(opts) || opts.length === 0) return;
-    if (!opts.includes(stateFree.extension)) {
+    const normalizedCurrent = normalizeExtensionValue(stateFree.extension);
+    const preferred = opts.includes(DEFAULT_EXTENSION)
+      ? DEFAULT_EXTENSION
+      : opts[0];
+    if (
+      !opts.includes(normalizedCurrent) ||
+      (preferred &&
+        normalizedCurrent !== preferred &&
+        preferred === DEFAULT_EXTENSION)
+    ) {
       previousFreeExtension.value = stateFree.extension;
-      stateFree.extension = opts[0];
+      stateFree.extension = normalizeExtensionValue(
+        preferred ?? DEFAULT_EXTENSION
+      );
     }
   }
 );
@@ -995,12 +894,12 @@ watch(
   () => stateScale.degree,
   () => {
     if (isApplyingPadState.value) return;
-    const defaultType = determineScaleChordType("triad");
+    const defaultType = determineScaleChordType();
     const options = extensionOptionsForType(defaultType);
-    const nextExtension = options[0] ?? "triad";
-    if (stateScale.extension !== nextExtension) {
+    const nextExtension = options[0] ?? DEFAULT_EXTENSION;
+    if (normalizeExtensionValue(stateScale.extension) !== nextExtension) {
       previousScaleExtension.value = stateScale.extension;
-      stateScale.extension = nextExtension;
+      stateScale.extension = normalizeExtensionValue(nextExtension);
     }
     stateScale.inversion = "root";
     stateScale.voicing = "close";
@@ -1012,12 +911,22 @@ watch(
   () => [stateFree.root, stateFree.type],
   () => {
     if (isApplyingPadState.value) return;
-    const defaultType = determineFreeChordType("triad");
-    const options = extensionOptionsForType(defaultType);
-    const nextExtension = options[0] ?? "triad";
-    if (stateFree.extension !== nextExtension) {
+    const normalizedType = normalizeFreeTypeValue(stateFree.type);
+    if (normalizedType !== stateFree.type) {
+      stateFree.type = normalizedType;
+    }
+    const options = allowedExtensionsForFreeType(normalizedType);
+    const normalizedCurrent = normalizeExtensionValue(stateFree.extension);
+    const nextExtension = options.includes(DEFAULT_EXTENSION)
+      ? DEFAULT_EXTENSION
+      : options[0] ?? DEFAULT_EXTENSION;
+    const shouldReset =
+      !options.includes(normalizedCurrent) ||
+      (nextExtension === DEFAULT_EXTENSION &&
+        normalizedCurrent !== DEFAULT_EXTENSION);
+    if (shouldReset) {
       previousFreeExtension.value = stateFree.extension;
-      stateFree.extension = nextExtension;
+      stateFree.extension = normalizeExtensionValue(nextExtension);
     }
     stateFree.inversion = "root";
     stateFree.voicing = "close";
@@ -1048,7 +957,7 @@ function buildPadSnapshot() {
     scale: {
       degree: stateScale.degree,
       octave: stateScale.octave,
-      extension: stateScale.extension,
+      extension: normalizeExtensionValue(stateScale.extension),
       inversion: stateScale.inversion,
       voicing: stateScale.voicing,
     },
@@ -1056,7 +965,7 @@ function buildPadSnapshot() {
       root: stateFree.root,
       type: stateFree.type,
       octave: stateFree.octave,
-      extension: stateFree.extension,
+      extension: normalizeExtensionValue(stateFree.extension),
       inversion: stateFree.inversion,
       voicing: stateFree.voicing,
     },
@@ -1085,7 +994,8 @@ function applyPadState(s) {
     if (s.scale.degree != null)
       stateScale.degree = normalizeDegree(s.scale.degree);
     if (s.scale.octave != null) stateScale.octave = Number(s.scale.octave);
-    if (s.scale.extension) stateScale.extension = String(s.scale.extension);
+    if (s.scale.extension != null)
+      stateScale.extension = normalizeExtensionValue(s.scale.extension);
     if (s.scale.inversion) stateScale.inversion = String(s.scale.inversion);
     if (s.scale.voicing) stateScale.voicing = String(s.scale.voicing);
   }
@@ -1093,7 +1003,8 @@ function applyPadState(s) {
     if (s.free.root) stateFree.root = String(s.free.root);
     if (s.free.type) stateFree.type = String(s.free.type);
     if (s.free.octave != null) stateFree.octave = Number(s.free.octave);
-    if (s.free.extension) stateFree.extension = String(s.free.extension);
+    if (s.free.extension != null)
+      stateFree.extension = normalizeExtensionValue(s.free.extension);
     if (s.free.inversion) stateFree.inversion = String(s.free.inversion);
     if (s.free.voicing) stateFree.voicing = String(s.free.voicing);
   }
@@ -1120,7 +1031,7 @@ const isDirty = computed(() => {
     scale: {
       degree: normalizeDegree(stateScale.degree),
       octave: Number(stateScale.octave),
-      extension: String(stateScale.extension),
+      extension: normalizeExtensionValue(stateScale.extension),
       inversion: String(stateScale.inversion),
       voicing: String(stateScale.voicing),
     },
@@ -1128,7 +1039,7 @@ const isDirty = computed(() => {
       root: String(stateFree.root),
       type: String(stateFree.type),
       octave: Number(stateFree.octave),
-      extension: String(stateFree.extension),
+      extension: normalizeExtensionValue(stateFree.extension),
       inversion: String(stateFree.inversion),
       voicing: String(stateFree.voicing),
     },
@@ -1138,7 +1049,7 @@ const isDirty = computed(() => {
     scale: {
       degree: normalizeDegree(s?.scale?.degree ?? "1"),
       octave: Number(s?.scale?.octave ?? 4),
-      extension: String(s?.scale?.extension ?? "triad"),
+      extension: normalizeExtensionValue(s?.scale?.extension),
       inversion: String(s?.scale?.inversion ?? "root"),
       voicing: String(s?.scale?.voicing ?? "close"),
     },
@@ -1146,7 +1057,7 @@ const isDirty = computed(() => {
       root: String(s?.free?.root ?? "C"),
       type: String(s?.free?.type ?? "major"),
       octave: Number(s?.free?.octave ?? 4),
-      extension: String(s?.free?.extension ?? "triad"),
+      extension: normalizeExtensionValue(s?.free?.extension),
       inversion: String(s?.free?.inversion ?? "root"),
       voicing: String(s?.free?.voicing ?? "close"),
     },
