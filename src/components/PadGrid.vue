@@ -15,10 +15,11 @@
       <button
         v-else
         class="pad-play"
-        @pointerdown.prevent.stop="onStart(idx, pad, $event)"
-        @pointerup.prevent.stop="onStop(idx, pad, $event)"
-        @pointerleave.prevent.stop="onStop(idx, pad, $event)"
-        @pointercancel.prevent.stop="onStop(idx, pad, $event)"
+        :class="{ 'is-pressed': pressedPads.has(idx) }"
+        @pointerdown.prevent.stop="onPressStart(idx, pad, $event)"
+        @pointerup.prevent.stop="onPressEnd(idx, pad, $event)"
+        @pointerleave.prevent.stop="onPressEnd(idx, pad, $event)"
+        @pointercancel.prevent.stop="onPressEnd(idx, pad, $event)"
         @contextmenu.prevent
       >
         <span>{{ padButtonLabelHtml(pad) }}</span>
@@ -53,6 +54,10 @@ const props = defineProps({
 
 const emit = defineEmits(["start-pad", "stop-pad", "edit"]);
 
+// Track which pad indices are currently pressed to avoid :active delay on mobile
+import { ref } from "vue";
+const pressedPads = ref(new Set());
+
 function onEditUnassigned(idx, e) {
   // Defer to next macrotask so any bubbling click/pointerup that might
   // trigger closedBy="any" won't instantly close the dialog.
@@ -69,5 +74,17 @@ function onStart(idx, pad, e) {
 function onStop(idx, pad, e) {
   if (pad?.mode === "unassigned" || pad?.assigned === false) return;
   emit("stop-pad", idx, e);
+}
+
+function onPressStart(idx, pad, e) {
+  // mark pressed state immediately for visual feedback
+  pressedPads.value.add(idx);
+  onStart(idx, pad, e);
+}
+
+function onPressEnd(idx, pad, e) {
+  // clear pressed state; slight defer to ensure class removal after event cycle
+  pressedPads.value.delete(idx);
+  onStop(idx, pad, e);
 }
 </script>

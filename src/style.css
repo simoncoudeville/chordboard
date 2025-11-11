@@ -430,7 +430,8 @@ dialog:open {
   grid-column: 1 / -1;
   grid-row: 1 / -1;
 
-  &:active {
+  /* &:active, */
+  &.is-pressed {
     background-color: var(--color-text);
     color: var(--color-layer-0);
   }
