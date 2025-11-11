@@ -27,6 +27,9 @@
       >
         <Music2 aria-hidden="true" :stroke-width="1.5" :size="20" />
       </button>
+      <button class="icon-button" type="button" @click="openInfoDialog">
+        <BadgeInfo aria-hidden="true" :stroke-width="1.5" :size="20" />
+      </button>
     </div>
   </div>
 
@@ -90,12 +93,26 @@
     @close="onCloseGlobalKey"
     @save="saveGlobalKey"
   />
+  <InfoDialog
+    ref="infoDialogRef"
+    :midi-supported="midiSupported"
+    @close="onCloseInfo"
+  />
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { WebMidi } from "webmidi";
-import { Music2, Cable, CircleEllipsis, Circle } from "lucide-vue-next";
+import {
+  Music2,
+  Cable,
+  CircleEllipsis,
+  Circle,
+  Info,
+  BadgeInfo,
+  BadgeQuestionMark,
+  Badge,
+} from "lucide-vue-next";
 import { Icon } from "lucide-vue-next";
 
 // Icon data for FoobarIcon (no export needed in <script setup>)
@@ -198,6 +215,7 @@ import PadGrid from "./components/PadGrid.vue";
 import EditDialog from "./components/EditDialog.vue";
 import MidiDialog from "./components/MidiDialog.vue";
 import GlobalKeyDialog from "./components/GlobalKeyDialog.vue";
+import InfoDialog from "./components/InfoDialog.vue";
 import { useMidi } from "./composables/useMidi";
 import { Scale, Note } from "@tonaljs/tonal";
 import {
@@ -242,6 +260,7 @@ const permissionPrompt = permissionPromptMidi;
 const editDialogRef = ref(null);
 const midiDialogRef = ref(null);
 const globalKeyDialogRef = ref(null);
+const infoDialogRef = ref(null);
 
 const currentPadIndex = ref(0);
 
@@ -337,6 +356,13 @@ function openGlobalKeyDialog() {
 }
 
 function onCloseGlobalKey() {}
+
+function openInfoDialog() {
+  clearVisualDisplay();
+  infoDialogRef.value?.open?.();
+}
+
+function onCloseInfo() {}
 
 function saveGlobalKey({ scale, type }) {
   const changed =

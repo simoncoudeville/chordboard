@@ -90,8 +90,8 @@ h3 {
   font-stretch: 85%;
 }
 
-label {
-  /* font-size: var(--font-size-sm); */
+a:any-link {
+  color: inherit;
 }
 
 .label-text {
@@ -193,6 +193,33 @@ button {
   /* background-color: var(--color-scale);
   color: var(--color-layer-0); */
   /* color: var(--color-scale); */
+}
+
+.icon-button.info {
+  /* background-color: var(--color-scale);
+  color: var(--color-layer-0); */
+  color: var(--color-text-meta);
+}
+
+.info-list {
+  list-style: none;
+  display: grid;
+  gap: var(--space-1-5);
+  padding: 0;
+}
+
+.info-title {
+  display: block;
+  font-weight: var(--font-weight-strong);
+  text-transform: uppercase;
+  margin-bottom: var(--space-0-5);
+}
+
+.info-text {
+  display: block;
+  color: var(--color-text-meta);
+  text-transform: none;
+  font-weight: normal;
 }
 
 .button-warning {
@@ -723,4 +750,8 @@ dialog:open {
 
 .strong {
   font-weight: var(--font-weight-strong);
+}
+
+.mb-1 {
+  margin-bottom: var(--space-1);
 }
