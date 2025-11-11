@@ -55,6 +55,7 @@
           Created by <a href="https://simoncoudeville.be">Simon Coudeville</a>.
           Check out the source code on
           <a href="https://github.com/simoncoudeville/chordboard">GitHub</a>.
+          Open Source under the MIT License.
         </p>
       </div>
     </form>
