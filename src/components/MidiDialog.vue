@@ -121,11 +121,7 @@
           </div>
           <div class="dialog-buttons">
             <button type="button" @click="onClose">Close</button>
-            <button
-              type="button"
-              @click="$emit('save')"
-              :disabled="!isMidiDirty"
-            >
+            <button type="button" @click="onSave" :disabled="!effectiveDirty">
               Save
             </button>
           </div>
@@ -171,11 +167,7 @@
           </div>
           <div class="dialog-buttons">
             <button type="button" @click="onClose">Close</button>
-            <button
-              type="button"
-              @click="$emit('save')"
-              :disabled="!isMidiDirty"
-            >
+            <button type="button" @click="onSave" :disabled="!effectiveDirty">
               Save
             </button>
           </div>
@@ -214,6 +206,13 @@ const emit = defineEmits([
 
 const dlg = ref(null);
 
+// Internal baseline snapshot when dialog opens
+const baseline = ref({
+  outputId: null,
+  outCh: 1,
+  initialized: false,
+});
+
 const outputIdProxy = computed({
   get: () => props.midiModelOutputId,
   set: (val) => emit("update:midiModelOutputId", val),
@@ -230,6 +229,12 @@ const permissionOnly = computed(
 
 function open() {
   dlg.value?.showModal();
+  // Capture baseline at open so later scans enable Save when changed
+  baseline.value = {
+    outputId: props.midiModelOutputId || null,
+    outCh: Number(props.midiModelOutCh) || 1,
+    initialized: true,
+  };
 }
 function close() {
   dlg.value?.close();
@@ -237,6 +242,34 @@ function close() {
 
 function onClose() {
   emit("close");
+}
+
+function normId(v) {
+  return v === "" ? null : v;
+}
+
+// Effective dirty: allow Save when selection differs from baseline
+const internalDirty = computed(() => {
+  if (!baseline.value.initialized) return false;
+  const curId = normId(outputIdProxy.value);
+  const curCh = Number(outChProxy.value) || 1;
+  const baseId = baseline.value.outputId ?? null;
+  const baseCh = Number(baseline.value.outCh) || 1;
+  return curId !== baseId || curCh !== baseCh;
+});
+
+// If parent already computed isMidiDirty, combine with our internal check
+const effectiveDirty = computed(() => {
+  const parentDirty = !!props.isMidiDirty;
+  return parentDirty || internalDirty.value;
+});
+
+function onSave() {
+  if (!effectiveDirty.value) return;
+  emit("save");
+  // Refresh baseline so subsequent changes re-evaluate correctly
+  baseline.value.outputId = normId(outputIdProxy.value);
+  baseline.value.outCh = Number(outChProxy.value) || 1;
 }
 
 defineExpose({ open, close, dlg });
