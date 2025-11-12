@@ -9,13 +9,13 @@
           @click="onClose"
           aria-label="Close"
         >
-          <X
-            class="dialog-close-icon"
-            aria-hidden="true"
-            :stroke-width="1.5"
-            :absoluteStrokeWidth="true"
-          />
-
+            <X
+              class="dialog-close-icon"
+              aria-hidden="true"
+              :stroke-width="1.25"
+              :size="16"
+              :absoluteStrokeWidth="true"
+            />
           <span class="sr-only">Close</span>
         </button>
       </div>
@@ -167,7 +167,7 @@
           >
             <Headphones
               aria-hidden="true"
-              :stroke-width="1"
+              :stroke-width="1.25"
               :size="16"
               :absoluteStrokeWidth="true"
             />

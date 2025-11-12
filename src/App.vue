@@ -16,8 +16,9 @@
         <Icon
           aria-hidden="true"
           :iconNode="Midi"
-          :stroke-width="1.5"
+          :stroke-width="1.25"
           :size="20"
+          :absoluteStrokeWidth="true"
         />
       </button>
       <button
@@ -25,10 +26,10 @@
         type="button"
         @click="openGlobalKeyDialog"
       >
-        <Music2 aria-hidden="true" :stroke-width="1.5" :size="20" />
+        <Music2 aria-hidden="true" :stroke-width="1.25" :size="20" :absoluteStrokeWidth="true" />
       </button>
       <button class="icon-button" type="button" @click="openInfoDialog">
-        <BadgeInfo aria-hidden="true" :stroke-width="1.5" :size="20" />
+        <BadgeInfo aria-hidden="true" :stroke-width="1.25" :size="20" :absoluteStrokeWidth="true" />
       </button>
     </div>
   </div>
