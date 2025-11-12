@@ -75,6 +75,28 @@ export function formatScaleName(root, type = "major") {
 }
 
 /**
+ * Determine whether to prefer flats or sharps based on the scale.
+ * For minor scales, uses the relative major to decide.
+ * @param {string} root - Scale root (e.g., "D", "Bb")
+ * @param {string} type - Scale type (e.g., "major", "minor")
+ * @returns {boolean} - true if flats should be preferred
+ */
+export function preferFlatsForScale(root, type = "major") {
+  if (!root) return false;
+
+  let keyToCheck = root;
+
+  // For minor keys, check the relative major
+  if (type === "minor") {
+    // Transpose up a minor third to get relative major
+    keyToCheck = Note.transpose(root, "m3");
+  }
+
+  // Check if this key is in the flat keys list
+  return FLAT_KEYS.includes(keyToCheck);
+}
+
+/**
  * Format a note name using enharmonic equivalents based on the global key.
  * @param {string} note - The note to format (e.g., "C#4", "Db", "E")
  * @param {string} globalScale - The current global scale root (e.g., "C", "G", "Bb")
@@ -90,12 +112,9 @@ export function formatNoteName(note, globalScale = "C", scaleType = "major") {
 
   const pc = info.pc;
   const octave = info.oct;
-  const preferredRoot = preferredScaleRoot(globalScale, scaleType);
 
-  // Determine if we should use sharps or flats
-  const useSharp =
-    SHARP_KEYS.includes(preferredRoot) ||
-    (!FLAT_KEYS.includes(preferredRoot) && !SHARP_KEYS.includes(preferredRoot));
+  // Determine if we should use sharps or flats based on the scale
+  const useFlats = preferFlatsForScale(globalScale, scaleType);
 
   // If note is natural (C, D, E, F, G, A, B), return as-is
   if (!pc.includes("#") && !pc.includes("b")) {
@@ -104,12 +123,12 @@ export function formatNoteName(note, globalScale = "C", scaleType = "major") {
 
   // Get enharmonic equivalent
   let formatted;
-  if (useSharp) {
-    // Prefer sharp notation
-    formatted = pc.includes("b") ? Note.enharmonic(pc) : pc;
-  } else {
+  if (useFlats) {
     // Prefer flat notation
     formatted = pc.includes("#") ? Note.enharmonic(pc) : pc;
+  } else {
+    // Prefer sharp notation
+    formatted = pc.includes("b") ? Note.enharmonic(pc) : pc;
   }
 
   // Append octave if present

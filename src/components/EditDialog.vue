@@ -138,7 +138,7 @@
         <div class="chord-preview-output">
           <div class="chord-preview-summary">
             <div class="chord-preview-symbol">
-              <span class="uppercase color-meta">Chord: </span>
+              <span class="uppercase color-meta">Chord (NEW): </span>
               <span>{{ previewChordHtml }}</span>
             </div>
             <div class="chord-preview-notes">
@@ -374,10 +374,16 @@ const editChordOptions = computed(() =>
   scaleNotes.value.map((n, i) => {
     const q = qualityForDegree(i);
     const suffix = q === "" ? "" : q === "m" ? "m" : q; // "m", "dim", "aug"
+    // Format root according to global scale to match preview enharmonics
+    const rootDisplay = formatNoteName(
+      n,
+      props.globalScaleRoot,
+      props.globalScaleType
+    );
     // Add 7 to dominant (degree V) display (only if not already diminished/augmented)
-    let display = `${n}${suffix}`;
+    let display = `${rootDisplay}${suffix}`;
     if (i === 4 && suffix === "") {
-      display = `${n}7`;
+      display = `${rootDisplay}7`;
     }
     return {
       degree: String(i + 1),
