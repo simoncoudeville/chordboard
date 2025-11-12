@@ -462,6 +462,7 @@ function defaultPad() {
     free: {
       root: "C",
       type: "major",
+      accidental: null,
       octave: 4,
       extension: DEFAULT_EXTENSION,
       inversion: "root",

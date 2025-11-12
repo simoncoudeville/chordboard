@@ -138,7 +138,7 @@
         <div class="chord-preview-output">
           <div class="chord-preview-summary">
             <div class="chord-preview-symbol">
-              <span class="uppercase color-meta">Chord (NEW): </span>
+              <span class="uppercase color-meta">Chord: </span>
               <span>{{ previewChordHtml }}</span>
             </div>
             <div class="chord-preview-notes">

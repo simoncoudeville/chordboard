@@ -159,3 +159,92 @@ export function formatChordSymbol(
   const formattedRoot = formatNoteName(root, globalScale, scaleType);
   return formattedRoot + suffix;
 }
+
+/**
+ * Free-mode helpers: prefer sharps/flats without relying on global scale
+ */
+
+/**
+ * From a root string as chosen in UI, infer preference:
+ *  - contains 'b'  => prefer flats (true)
+ *  - contains '#'  => prefer sharps (false)
+ *  - natural       => null (unknown)
+ */
+export function preferFlatsFromRoot(rootPc) {
+  if (!rootPc) return null;
+  if (/#/.test(rootPc)) return false;
+  if (/b/.test(rootPc)) return true;
+  return null;
+}
+
+function formatPcByPreference(pc, preferFlats) {
+  if (!pc) return pc;
+  if (preferFlats === true) {
+    return pc.includes("#") ? Note.enharmonic(pc) : pc;
+  }
+  if (preferFlats === false) {
+    return pc.includes("b") ? Note.enharmonic(pc) : pc;
+  }
+  return pc;
+}
+
+/**
+ * Format a single note (with optional octave) by a flat/sharp preference.
+ * If note is natural, it is returned unchanged.
+ */
+export function formatNoteNameByPreference(note, preferFlats) {
+  if (!note) return "";
+  const simplified = simplifyNoteName(note);
+  const info = Note.get(simplified);
+  if (!info || !info.pc) return note;
+
+  const pc = info.pc;
+  const octave = info.oct;
+
+  let formattedPc = pc;
+  if (pc.includes("#") || pc.includes("b")) {
+    formattedPc = formatPcByPreference(pc, preferFlats);
+  }
+
+  return typeof octave === "number" ? `${formattedPc}${octave}` : formattedPc;
+}
+
+/**
+ * Format a chord symbol's root by a flat/sharp preference.
+ */
+export function formatChordSymbolByPreference(chordSymbol, preferFlats) {
+  if (!chordSymbol) return "";
+  const match = chordSymbol.match(/^([A-G][#b]?)/);
+  if (!match) return chordSymbol;
+  const root = match[1];
+  const suffix = chordSymbol.slice(root.length);
+  const formattedRoot = formatNoteNameByPreference(root, preferFlats);
+  return formattedRoot + suffix;
+}
+
+/**
+ * Given a set of pitch classes or note names, choose whether flats yield a
+ * cleaner overall spelling than sharps. Returns a boolean preference.
+ * If tied, falls back to the provided fallback (default: prefer sharps=false).
+ */
+export function choosePreferFlatsForPcs(pcs = [], fallbackPreferFlats = false) {
+  if (!Array.isArray(pcs) || pcs.length === 0) return fallbackPreferFlats;
+
+  const scoreFor = (preferFlats) => {
+    let total = 0;
+    for (const n of pcs) {
+      const info = Note.get(n);
+      const pc = (info && info.pc) || String(n);
+      const spelled = formatPcByPreference(pc, preferFlats);
+      total += accidentalScore(spelled);
+    }
+    return total;
+  };
+
+  const flatScore = scoreFor(true);
+  const sharpScore = scoreFor(false);
+
+  if (flatScore < sharpScore) return true;
+  if (sharpScore < flatScore) return false;
+  return fallbackPreferFlats;
+}
