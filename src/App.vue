@@ -16,7 +16,7 @@
         <Icon
           aria-hidden="true"
           :iconNode="Midi"
-          :stroke-width="1.25"
+          :stroke-width="1.5"
           :size="20"
           :absoluteStrokeWidth="true"
         />
@@ -26,10 +26,10 @@
         type="button"
         @click="openGlobalKeyDialog"
       >
-        <Music2 aria-hidden="true" :stroke-width="1.25" :size="20" :absoluteStrokeWidth="true" />
+        <Music2 aria-hidden="true" :stroke-width="1.5" :size="20" :absoluteStrokeWidth="true" />
       </button>
       <button class="icon-button" type="button" @click="openInfoDialog">
-        <BadgeInfo aria-hidden="true" :stroke-width="1.25" :size="20" :absoluteStrokeWidth="true" />
+        <BadgeInfo aria-hidden="true" :stroke-width="1.5" :size="20" :absoluteStrokeWidth="true" />
       </button>
     </div>
   </div>
@@ -115,6 +115,8 @@ import {
   Badge,
 } from "lucide-vue-next";
 import { Icon } from "lucide-vue-next";
+const iconStrokeWidth = 1.5;
+const iconStrokeWidthSmall = 1.25;
 
 // Icon data for FoobarIcon (no export needed in <script setup>)
 const Midi = [

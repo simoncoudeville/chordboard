@@ -1,11 +1,13 @@
-/* Geist Mono via @fontsource - Regular (400) and SemiBold (600) */
-
-/* Load weights used by the UI (normal text = 400, strong = 600) */
 @import "@fontsource/geist-mono/400.css";
 @import "@fontsource/geist-mono/600.css";
 
-/* After adding these imports, update your CSS (e.g., in src/style.css)
-   to use: font-family: "Geist Mono", ui-monospace, Menlo, Monaco, "Cascadia Mono",
-   "Segoe UI Mono", "Roboto Mono", "Oxygen Mono", "Ubuntu Mono",
-   "Source Code Pro", "Fira Mono", "Droid Sans Mono", "Consolas", "Courier New", monospace;
-*/
+@import "@fontsource/martian-mono";
+
+@font-face {
+    font-family: "Martian Mono VF";
+    src: url("assets/fonts/MartianMonoVF.woff2") format("woff2");
+    font-weight: 100 800;
+    font-stretch: 75% 112.5%;
+    font-style: normal;
+    font-display: swap;
+}

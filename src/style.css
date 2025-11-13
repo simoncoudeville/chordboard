@@ -4,7 +4,7 @@
 
   --radius: 2px;
 
-  --font-size: 12;
+  --font-size: 11;
   --font-size-sm: calc(12 / var(--font-size) * 1rem);
   --font-weight-strong: 600;
   --line-height: 20;
@@ -54,12 +54,16 @@
 }
 
 html {
-  /* Prefer Geist Mono from npm package, fall back to system monospace */
-  font-family: "Geist Mono", ui-monospace, Menlo, Monaco, "Cascadia Mono",
+    /*font-family: "Geist Mono", ui-monospace, Menlo, Monaco, "Cascadia Mono",
+    "Segoe UI Mono", "Roboto Mono", "Oxygen Mono", "Ubuntu Mono",
+    "Source Code Pro", "Fira Mono", "Droid Sans Mono", "Consolas", "Courier New",
+    monospace;*/
+    font-family: "Martian Mono VF", ui-monospace, Menlo, Monaco, "Cascadia Mono",
     "Segoe UI Mono", "Roboto Mono", "Oxygen Mono", "Ubuntu Mono",
     "Source Code Pro", "Fira Mono", "Droid Sans Mono", "Consolas", "Courier New",
     monospace;
   font-size: calc(var(--font-size) / 16 * 100%);
+  font-stretch: 80%;
   line-height: var(--computed-line-height);
   background-color: var(--color-layer-0);
   color: var(--color-text);
@@ -87,7 +91,6 @@ h3 {
   font-size: 1rem;
   /* font-size: var(--font-size-sm); */
   font-weight: var(--font-weight-strong);
-  font-stretch: 85%;
 }
 
 a:any-link {
@@ -97,7 +100,6 @@ a:any-link {
 .label-text {
   font-weight: var(--font-weight-strong);
   /* font-family: "IBMPlexSansVar", sans-serif; */
-  font-stretch: 85%;
   text-transform: uppercase;
   display: inline-block;
   padding-right: var(--space-3);
@@ -117,7 +119,6 @@ select {
   font: inherit;
   font-weight: normal;
   font-size: 1rem;
-  font-stretch: 100%;
   line-height: inherit;
   /* appearance: none; */
   /* padding: 0; */
@@ -136,7 +137,6 @@ button {
   /* font-size: var(--font-size-sm); */
   /* font-family: "IBMPlexSansVar", sans-serif; */
   font-weight: var(--font-weight-strong);
-  font-stretch: 85%;
   text-transform: uppercase;
   -webkit-tap-highlight-color: transparent; /* remove iOS/Android tap highlight */
 
@@ -419,8 +419,6 @@ dialog:open {
   border-radius: 4px;
   text-align: left;
   text-transform: none;
-  /* font-family: "IBM Plex Mono", sans-serif; */
-  font-stretch: 100%;
   font-weight: normal;
   font-size: 1rem;
   padding: var(--space-1);
@@ -669,8 +667,6 @@ dialog:open {
 .toggle-button {
   color: var(--color-text-meta);
   text-transform: uppercase;
-  /* font-family: "IBMPlexSansVar", sans-serif; */
-  font-stretch: 85%;
   font-weight: var(--font-weight-strong);
   padding: var(--space-1-5) var(--space-2);
   flex-basis: 50%;

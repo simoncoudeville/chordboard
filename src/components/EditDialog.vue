@@ -9,13 +9,13 @@
           @click="onClose"
           aria-label="Close"
         >
-            <X
-              class="dialog-close-icon"
-              aria-hidden="true"
-              :stroke-width="1.25"
-              :size="16"
-              :absoluteStrokeWidth="true"
-            />
+          <X
+            class="dialog-close-icon"
+            aria-hidden="true"
+            :stroke-width="1.5"
+            :size="16"
+            :absoluteStrokeWidth="true"
+          />
           <span class="sr-only">Close</span>
         </button>
       </div>
@@ -46,8 +46,8 @@
           <p class="global-scale-info">
             <Music2
               aria-hidden="true"
-              :size="16"
-              :stroke-width="1"
+              :size="12"
+              :stroke-width="1.5"
               :absoluteStrokeWidth="true"
             />
             Global scale: <span>{{ globalScaleDisplay }}</span>
@@ -167,7 +167,7 @@
           >
             <Headphones
               aria-hidden="true"
-              :stroke-width="1.25"
+              :stroke-width="1.5"
               :size="16"
               :absoluteStrokeWidth="true"
             />
@@ -233,6 +233,7 @@ import {
 } from "../utils/chordSystem";
 
 // Keep padIndex so the title continues to work; expose open/close for parent
+const iconStrokeWidth = Number(globalThis?.APP_ICON_STROKE_WIDTH ?? 1.5);
 const props = defineProps({
   padIndex: { type: Number, default: 0 },
   // Receive current global scale from parent (App.vue)
