@@ -54,8 +54,8 @@
 }
 
 html {
-  /* Prefer IBM Plex Mono from npm package, fall back to system monospace */
-  font-family: "IBM Plex Mono", ui-monospace, Menlo, Monaco, "Cascadia Mono",
+  /* Prefer Geist Mono from npm package, fall back to system monospace */
+  font-family: "Geist Mono", ui-monospace, Menlo, Monaco, "Cascadia Mono",
     "Segoe UI Mono", "Roboto Mono", "Oxygen Mono", "Ubuntu Mono",
     "Source Code Pro", "Fira Mono", "Droid Sans Mono", "Consolas", "Courier New",
     monospace;
@@ -387,7 +387,7 @@ dialog:open {
   justify-self: end;
   z-index: 1;
 }
-/* 
+/*
 .pad-edit-icon {
   path {
     fill: currentColor;
@@ -664,8 +664,6 @@ dialog:open {
   /* gap: var(--space-1); */
   /* margin-left: calc(var(--space-1) * -1); */
   /* background-color: var(--color-layer-2); */
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
   /* padding: 1px; */
 }
 
@@ -675,15 +673,20 @@ dialog:open {
   /* font-family: "IBMPlexSansVar", sans-serif; */
   font-stretch: 85%;
   font-weight: var(--font-weight-strong);
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-1-5) var(--space-2);
   flex-basis: 50%;
   text-align: center;
+  border: 1px solid var(--color-border);
+  border-width: 1px 0;
   /* border-radius: var(--radius); */
-  border-radius: calc(var(--radius) - 1px);
 
   &:has(.toggle-button-input:checked) {
     color: var(--color-text);
-    background-color: var(--color-border);
+    border-bottom-color: var(--color-layer-0);
+  }
+
+  + .toggle-button {
+    border-left: 1px solid var(--color-border);
   }
 }
 

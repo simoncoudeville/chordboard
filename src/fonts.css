@@ -1,19 +1,11 @@
-/* IBM Plex Mono - Regular (400) and SemiBold (600) only */
+/* Geist Mono via @fontsource - Regular (400) and SemiBold (600) */
 
-@font-face {
-  font-family: 'IBM Plex Mono';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('@ibm/plex-mono/fonts/complete/woff2/IBMPlexMono-Regular.woff2') format('woff2'),
-       url('@ibm/plex-mono/fonts/complete/woff/IBMPlexMono-Regular.woff') format('woff');
-}
+/* Load weights used by the UI (normal text = 400, strong = 600) */
+@import "@fontsource/geist-mono/400.css";
+@import "@fontsource/geist-mono/600.css";
 
-@font-face {
-  font-family: 'IBM Plex Mono';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('@ibm/plex-mono/fonts/complete/woff2/IBMPlexMono-SemiBold.woff2') format('woff2'),
-       url('@ibm/plex-mono/fonts/complete/woff/IBMPlexMono-SemiBold.woff') format('woff');
-}
+/* After adding these imports, update your CSS (e.g., in src/style.css)
+   to use: font-family: "Geist Mono", ui-monospace, Menlo, Monaco, "Cascadia Mono",
+   "Segoe UI Mono", "Roboto Mono", "Oxygen Mono", "Ubuntu Mono",
+   "Source Code Pro", "Fira Mono", "Droid Sans Mono", "Consolas", "Courier New", monospace;
+*/

@@ -19,7 +19,7 @@
           <span class="sr-only">Close</span>
         </button>
       </div>
-      <div class="dialog-content">
+      <div class="dialog-toggles">
         <div class="toggle-buttons">
           <label class="toggle-button"
             ><input
@@ -28,7 +28,7 @@
               name="mode-chooser"
               v-model="model.mode"
               value="scale"
-            /><span class="toggle-button-text">Scale mode</span>
+            /><span class="toggle-button-text">In scale</span>
           </label>
           <label class="toggle-button"
             ><input
@@ -37,7 +37,7 @@
               name="mode-chooser"
               v-model="model.mode"
               value="free"
-            /><span class="toggle-button-text">Free mode</span>
+            /><span class="toggle-button-text">Free</span>
           </label>
         </div>
       </div>
