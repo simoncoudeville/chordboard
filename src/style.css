@@ -633,7 +633,7 @@ dialog:open {
   color: var(--color-text);
   border-radius: var(--radius);
 
-  &:active {
+  &.is-pressed {
     background-color: var(--color-text);
     color: var(--color-layer-0);
   }

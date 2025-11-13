@@ -146,25 +146,17 @@
               <span>{{ previewNotesHtml }}</span>
             </div>
           </div>
-          <button
-            type="button"
-            class="chord-preview-play-button"
-            :disabled="!hasChordForPreview"
-            @pointerdown.prevent.stop="
-              $emit('preview-start', {
-                event: $event,
-                notes: previewNotesPlayable,
-              })
-            "
-            @pointerup.prevent.stop="$emit('preview-stop', { event: $event })"
-            @pointerleave.prevent.stop="
-              $emit('preview-stop', { event: $event })
-            "
-            @pointercancel.prevent.stop="
-              $emit('preview-stop', { event: $event })
-            "
-            @contextmenu.prevent
-          >
+           <button
+             type="button"
+             class="chord-preview-play-button"
+             :class="{ 'is-pressed': isPreviewPressed }"
+             :disabled="!hasChordForPreview"
+             @pointerdown.prevent.stop="onPreviewPressStart($event)"
+             @pointerup.prevent.stop="onPreviewPressEnd($event)"
+             @pointerleave.prevent.stop="onPreviewPressEnd($event)"
+             @pointercancel.prevent.stop="onPreviewPressEnd($event)"
+             @contextmenu.prevent
+           >
             <Headphones
               aria-hidden="true"
               :stroke-width="1.5"
@@ -178,24 +170,6 @@
           :start-octave="1"
           :octaves="7"
         />
-        <!--<button
-          type="button"
-          class="button large preview"
-          :disabled="!hasChordForPreview"
-          @pointerdown.prevent.stop="
-            $emit('preview-start', {
-              event: $event,
-              notes: previewNotesPlayable,
-            })
-          "
-          @pointerup.prevent.stop="$emit('preview-stop', { event: $event })"
-          @pointerleave.prevent.stop="$emit('preview-stop', { event: $event })"
-          @pointercancel.prevent.stop="$emit('preview-stop', { event: $event })"
-          @contextmenu.prevent
-        >
-          Play Chord
-        </button>
-        -->
       </div>
       <div class="dialog-buttons">
         <button type="button" @click="onClose">Cancel</button>
@@ -250,8 +224,9 @@ const props = defineProps({
 const emit = defineEmits(["save", "close", "preview-start", "preview-stop"]);
 
 const dlg = ref(null);
+const isPreviewPressed = ref(false);
 
-// Mode flag only; all other selections are kept separate per mode
+ // Mode flag only; all other selections are kept separate per mode
 const model = ref({ mode: "scale" });
 
 // Independent state per mode
@@ -762,6 +737,22 @@ const previewNotesHtml = computed(() => {
   return formatted.join(" ");
 });
 
+function onPreviewPressStart(event) {
+  if (!hasChordForPreview.value || isPreviewPressed.value) return;
+  isPreviewPressed.value = true;
+  emit("preview-start", {
+    event,
+    notes: previewNotesPlayable.value,
+  });
+}
+
+function onPreviewPressEnd(event) {
+  if (isPreviewPressed.value) {
+    isPreviewPressed.value = false;
+  }
+  emit("preview-stop", { event });
+}
+
 function open() {
   // Reset dialog state to match the pad's saved state
   applyPadState(props.padState);
@@ -771,6 +762,7 @@ function close() {
   dlg.value?.close?.();
 }
 function onClose() {
+  isPreviewPressed.value = false;
   emit("preview-stop");
   emit("close");
   close();
