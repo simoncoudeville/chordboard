@@ -21,10 +21,7 @@
       </div>
       <div class="dialog-content">
         <p class="color-meta">
-          Chordboard is a web-based chord pad app to send MIDI notes to your
-          external gear over Web MIDI. This allows the app to communicate
-          directly with connected MIDI devices through the browser if it
-          supports the Web MIDI API.
+          Chordboard is a web-based chord pad app. It can send MIDI notes over USB to external gear if your browser supports the Web MIDI API.
         </p>
       </div>
       <div class="dialog-content">
@@ -39,7 +36,7 @@
             href="https://www.google.com/search?q=android+developer+mode&rlz=1C5GCCM_en&oq=android+developer+mode&gs_lcrp=EgZjaHJvbWUyCQgAEEUYORiABDIHCAEQABiABDIHCAIQABiABDIHCAMQABiABDIHCAQQABiABDIHCAUQABiABDIHCAYQABiABDIHCAcQABiABDIHCAgQABiABDIHCAkQABiABNIBCDUxNDNqMGoxqAIAsAIA&sourceid=chrome&ie=UTF-8"
             >Developer Mode</a
           >
-          to allow USB MIDI connections, then connect via USB-C.
+          to allow MIDI over USB. Then connect your device via USB-C and select it in the MIDI settings.
         </p>
       </div>
       <div class="dialog-content" v-if="midiSupported">
@@ -75,8 +72,8 @@ const dlg = ref(null);
 
 const midiSupportMessage = computed(() =>
   props.midiSupported
-    ? "Great! This browser supports Web MIDI. "
-    : "Unfortunately this browser does not support Web MIDI. Try Chrome on Android or on a desktop browser."
+    ? "Great! Your browser supports Web MIDI. "
+    : "Unfortunately your browser does not support Web MIDI. Try Chrome on Android or on a desktop browser."
 );
 
 function open() {
