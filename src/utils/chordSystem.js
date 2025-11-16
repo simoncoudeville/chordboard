@@ -19,10 +19,20 @@ export const ALLOWED_EXTENSIONS_BY_TYPE = Object.freeze({
   diminished: ["none", "7"],
   halfDiminished: ["none"],
   augmented: ["none", "maj7", "9"],
-  sus2: ["none", "add9"],
-  sus4: ["none", "add9"],
+  sus2: ["none", "add9", "7", "9", "11", "13"],
+  sus4: ["none", "7", "9", "11", "13"],
   power: ["none"],
 });
+
+const DISALLOWED_SUS_EXTENSIONS = new Set([
+  "maj7",
+  "add2",
+  "6",
+  "#9",
+  "b9",
+  "#11",
+  "b13",
+]);
 
 const TYPE_ALIAS_MAP = Object.freeze(
   Object.fromEntries(
@@ -64,6 +74,30 @@ function dedupePitchClasses(notes) {
   return result;
 }
 
+const SUSPENSION_BASE_INTERVALS = {
+  sus2: ["1P", "2M", "5P"],
+  sus4: ["1P", "4P", "5P"],
+};
+
+const SUSPENSION_EXTENSION_INTERVALS = {
+  add9: ["9M"],
+  7: ["7m"],
+  9: ["7m", "9M"],
+  11: ["7m", "9M", "11P"],
+  13: ["7m", "9M", "11P", "13M"],
+};
+
+function buildSuspendedChordNotes(rootPc, type, extension) {
+  const base = SUSPENSION_BASE_INTERVALS[type] || ["1P", "4P", "5P"];
+  const extra = SUSPENSION_EXTENSION_INTERVALS[extension] || [];
+  const intervals = [...base, ...extra];
+  const notes = intervals
+    .map((intv) => Note.transpose(rootPc, intv))
+    .map((note) => Note.get(note)?.pc)
+    .filter(Boolean);
+  return dedupePitchClasses(notes);
+}
+
 export function normalizeChordType(value) {
   if (value == null) return "major";
   const raw = String(value).trim();
@@ -94,7 +128,10 @@ export function allowedExtensionsForChordType(type) {
   const result = [];
   for (const item of list) {
     const normalized = normalizeExtension(item);
-    if (!seen.has(normalized)) {
+    const blocked =
+      (chordType === "sus2" || chordType === "sus4") &&
+      DISALLOWED_SUS_EXTENSIONS.has(normalized.toLowerCase());
+    if (!blocked && !seen.has(normalized)) {
       seen.add(normalized);
       result.push(normalized);
     }
@@ -181,18 +218,32 @@ function buildAugmentedChordSymbols(root, extension) {
   }
 }
 
+const SUSPENSION_SUFFIX = {
+  none: "",
+  add9: "add9",
+  7: "7",
+  9: "9",
+  11: "11",
+  13: "13",
+};
+
+function buildSuspensionDisplay(root, base, extension) {
+  const suffix = SUSPENSION_SUFFIX[extension] || "";
+  return suffix ? `${root}${base}${suffix}` : `${root}${base}`;
+}
+
 function buildSus2ChordSymbols(root, extension) {
-  if (extension === "add9") {
-    return { display: `${root}sus2add9`, tonal: `${root}sus2` };
-  }
-  return { display: `${root}sus2`, tonal: `${root}sus2` };
+  return {
+    display: buildSuspensionDisplay(root, "sus2", extension),
+    tonal: `${root}sus2`,
+  };
 }
 
 function buildSus4ChordSymbols(root, extension) {
-  if (extension === "add9") {
-    return { display: `${root}sus4add9`, tonal: `${root}sus4` };
-  }
-  return { display: `${root}sus4`, tonal: `${root}sus4` };
+  return {
+    display: buildSuspensionDisplay(root, "sus4", extension),
+    tonal: `${root}sus4`,
+  };
 }
 
 function buildPowerChordSymbols(root) {
@@ -217,6 +268,18 @@ export function buildChordDefinition(rootPc, type, extension) {
   const { display, tonal } = builder(rootPc, ext);
   const tonalSymbol = tonal || display;
   const chord = Chord.get(tonalSymbol);
+
+  if (chordType === "sus2" || chordType === "sus4") {
+    const manual = buildSuspendedChordNotes(rootPc, chordType, ext);
+    if (manual.length) {
+      return {
+        displaySymbol: display,
+        tonalSymbol,
+        notes: manual,
+      };
+    }
+  }
+
   if (Array.isArray(chord.notes) && chord.notes.length) {
     return {
       displaySymbol: display,

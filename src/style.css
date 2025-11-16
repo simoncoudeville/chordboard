@@ -26,25 +26,27 @@
   --pad-min: 109px;
 
   /* Figma colors — selected frame */
-  --color-gray-100: #0d0d0d;
-  --color-gray-200: #333333;
-  --color-gray-300: #4d4d4d;
-  --color-gray-400: #999999;
-  --color-gray-450: #b3b3b3;
-  --color-gray-500: #f2f2f2;
+  --color-gray-050: hsl(0 0% 5%);
+  --color-gray-100: hsl(0 0% 10%);
+  --color-gray-150: hsl(0 0% 15%);
+  --color-gray-200: hsl(0 0% 20%);
+  --color-gray-300: hsl(0 0% 30%);
+  --color-gray-400: hsl(0 0% 55%);
+  --color-gray-450: hsl(0 0% 70%);
+  --color-gray-500: hsl(0 0% 95%);
 
   /* Converted to OKLCH for perceptual uniformity; hex kept as comment fallback */
   --color-warning: oklch(80% 0.1 60);
   --color-valid: oklch(80% 0.1 140);
   --color-scale: oklch(80% 0.1 290);
 
-  --color-layer-0: var(--color-gray-100);
-  --color-layer-1: var(--color-gray-200);
+  --color-layer-0: var(--color-gray-050);
+  --color-layer-1: var(--color-gray-150);
   --color-layer-2: var(--color-gray-300);
   --color-layer-3: var(--color-gray-400);
   --color-text: var(--color-gray-500);
   --color-text-meta: var(--color-gray-400);
-  --color-border: var(--color-gray-200);
+  --color-border: var(--color-gray-150);
 }
 
 * {
@@ -663,6 +665,7 @@ dialog:open {
   border: 1px solid var(--color-border);
   border-radius: 4px;
   background-color: var(--color-layer-1);
+  /*gap: var(--space-2-5);*/
   /*gap: 2px;*/
   /*padding: 0 var(--space-2);*/
   /*padding: 0 2px;*/
