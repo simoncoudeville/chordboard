@@ -28,8 +28,18 @@
         class="pad-buttons"
         v-if="!(pad?.mode === 'unassigned' || pad?.assigned === false)"
       >
+         <button class="pad-edit" @click="$emit('delete', idx)">
+          <Undo
+            class="pad-delete-icon"
+            aria-hidden="true"
+            :stroke-width="1.25"
+            :size="16"
+            :absoluteStrokeWidth="true"
+          />
+          <span class="sr-only">Delete</span>
+        </button>
         <button class="pad-edit" @click="$emit('edit', idx)">
-          <Repeat
+          <Bolt
             class="pad-edit-icon"
             aria-hidden="true"
             :stroke-width="1.25"
@@ -44,7 +54,7 @@
 </template>
 
 <script setup>
-import { IterationCw, Repeat2, Repeat, Bolt } from "lucide-vue-next";
+import { IterationCw, Repeat2, Repeat, Bolt, Minus, Undo, ChevronsUpDown } from "lucide-vue-next";
 const props = defineProps({
   pads: { type: Array, required: true },
   permissionAllowed: { type: Boolean, default: false },

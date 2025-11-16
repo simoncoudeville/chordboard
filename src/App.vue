@@ -41,6 +41,7 @@
     :pad-button-label-html="padButtonLabelHtml"
     @start-pad="onStartPad"
     @stop-pad="onStopPad"
+    @delete="requestDeletePad"
     @edit="openEditDialog"
   />
   <button
@@ -98,6 +99,12 @@
     ref="infoDialogRef"
     :midi-supported="midiSupported"
     @close="onCloseInfo"
+  />
+  <PadDeleteDialog
+    ref="padDeleteDialogRef"
+    @confirm="confirmDeletePad"
+    @cancel="cancelDeletePad"
+    @close="onClosePadDeleteDialog"
   />
 </template>
 
@@ -219,6 +226,7 @@ import EditDialog from "./components/EditDialog.vue";
 import MidiDialog from "./components/MidiDialog.vue";
 import GlobalKeyDialog from "./components/GlobalKeyDialog.vue";
 import InfoDialog from "./components/InfoDialog.vue";
+import PadDeleteDialog from "./components/PadDeleteDialog.vue";
 import { useMidi } from "./composables/useMidi";
 import { Scale, Note } from "@tonaljs/tonal";
 import {
@@ -264,8 +272,10 @@ const editDialogRef = ref(null);
 const midiDialogRef = ref(null);
 const globalKeyDialogRef = ref(null);
 const infoDialogRef = ref(null);
+const padDeleteDialogRef = ref(null);
 
 const currentPadIndex = ref(0);
+const deleteConfirmIndex = ref(null);
 
 const midiModelOutputId = ref("");
 const midiModelOutCh = ref(1);
@@ -366,6 +376,41 @@ function openInfoDialog() {
 }
 
 function onCloseInfo() {}
+
+function requestDeletePad(idx) {
+  deleteConfirmIndex.value = idx;
+  padDeleteDialogRef.value?.open?.();
+}
+
+function resetDeleteDialogState() {
+  deleteConfirmIndex.value = null;
+}
+
+function cancelDeletePad() {
+  padDeleteDialogRef.value?.close?.();
+  resetDeleteDialogState();
+}
+
+function onClosePadDeleteDialog() {
+  resetDeleteDialogState();
+}
+
+function confirmDeletePad() {
+  const idx = deleteConfirmIndex.value;
+  if (typeof idx !== "number" || idx < 0 || idx >= pads.value.length) {
+    padDeleteDialogRef.value?.close?.();
+    resetDeleteDialogState();
+    return;
+  }
+  const pad = pads.value[idx];
+  if (pad && pad.mode !== "unassigned" && pad.assigned !== false) {
+    onStopPad(idx, pad, null);
+  }
+  pads.value.splice(idx, 1, defaultPad());
+  savePads();
+  padDeleteDialogRef.value?.close?.();
+  resetDeleteDialogState();
+}
 
 function saveGlobalKey({ scale, type }) {
   const changed =
@@ -530,11 +575,11 @@ const showMidiWarningButton = computed(() => {
 
 const midiWarningLabel = computed(() => {
   if (!midiSupported.value)
-    return "Warning: Your browser does not support Web MIDI.";
-  if (!midiEnabled.value) return "Warning: MIDI is not enabled.";
-  if (!hasMidiOutputs.value) return "Warning: No MIDI devices detected.";
+    return "Your browser does not support Web MIDI.";
+  if (!midiEnabled.value) return "MIDI is not enabled.";
+  if (!hasMidiOutputs.value) return "No MIDI devices detected.";
   const text = statusDisplay.value || "";
-  return text ? `Warning: ${text}` : "Warning: MIDI configuration issue.";
+  return text ? `${text}` : "MIDI configuration issue.";
 });
 
 // Count scale-mode pads for inline warning in GlobalKeyDialog
