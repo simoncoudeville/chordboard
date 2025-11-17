@@ -56,11 +56,11 @@
 }
 
 html {
-    /*font-family: "Geist Mono", ui-monospace, Menlo, Monaco, "Cascadia Mono",
+  /*font-family: "Geist Mono", ui-monospace, Menlo, Monaco, "Cascadia Mono",
     "Segoe UI Mono", "Roboto Mono", "Oxygen Mono", "Ubuntu Mono",
     "Source Code Pro", "Fira Mono", "Droid Sans Mono", "Consolas", "Courier New",
     monospace;*/
-    font-family: "Martian Mono VF", ui-monospace, Menlo, Monaco, "Cascadia Mono",
+  font-family: "Martian Mono VF", ui-monospace, Menlo, Monaco, "Cascadia Mono",
     "Segoe UI Mono", "Roboto Mono", "Oxygen Mono", "Ubuntu Mono",
     "Source Code Pro", "Fira Mono", "Droid Sans Mono", "Consolas", "Courier New",
     monospace;
@@ -106,6 +106,30 @@ a:any-link {
   display: inline-block;
   padding-right: var(--space-3);
   padding-bottom: var(--space-1);
+}
+
+input[type="range"] {
+  --range-height: 1px;
+  --range-thumb-size: var(--space-1-5);
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: transparent;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: var(--range-height);
+  background: var(--color-border);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--range-thumb-size);
+  height: var(--range-thumb-size);
+  background: var(--color-text);
+  border-radius: 50%;
+  margin-top: calc(var(--range-thumb-size) / 2 * -1 + 1px / 2);
 }
 
 select {
@@ -366,7 +390,7 @@ dialog:open {
   --pad-min: 130px;
   padding: 0 var(--space-0-5) var(--space-0-5);
   /*gap: var(--space-0-5);*/
-   padding: 0 2px 2px;
+  padding: 0 2px 2px;
   gap: 2px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(var(--pad-min), 1fr));
@@ -628,7 +652,7 @@ dialog:open {
 }
 
 .chord-preview-play-button {
-  padding: calc(10/var(--font-size) * 1rem);
+  padding: calc(10 / var(--font-size) * 1rem);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -647,6 +671,41 @@ dialog:open {
 .chord-preview {
   display: grid;
   gap: var(--space-2-5);
+}
+
+.edit-grid-item.transpose-control {
+  flex-basis: 100%;
+}
+
+.transpose-control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.transpose-control input[type="range"] {
+  width: 100%;
+}
+
+.transpose-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: var(--font-weight-strong);
+}
+
+.transpose-reset {
+  font-weight: var(--font-weight-strong);
+  text-transform: uppercase;
+  padding: 0 var(--space-0-5);
+  border-radius: var(--radius);
+  background-color: var(--color-layer-1);
+  color: var(--color-text);
+
+  &:disabled {
+    opacity: 0.4;
+  }
 }
 
 .sr-only {
@@ -673,7 +732,7 @@ dialog:open {
   /* margin-left: calc(var(--space-1) * -1); */
   /* background-color: var(--color-layer-2); */
   /* padding: 1px; */
-  margin: 0  var(--space-2-5);
+  margin: 0 var(--space-2-5);
 }
 
 .toggle-button {

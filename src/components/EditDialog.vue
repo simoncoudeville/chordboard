@@ -97,16 +97,6 @@
           </label>
         </template>
 
-        <!-- Root octave always active -->
-        <label class="edit-grid-item">
-          <span class="label-text">Root octave</span>
-          <CustomSelect
-            v-model="currentOctave"
-            :options="[2, 3, 4, 5]"
-            :cast-number="true"
-          />
-        </label>
-
         <!-- Chord type / extension -->
         <label class="edit-grid-item">
           <span class="label-text">Extension</span>
@@ -116,15 +106,10 @@
           />
         </label>
 
-        <!-- Inversion then Voicing pattern -->
-        <label class="edit-grid-item">
-          <span class="label-text">Inversion</span>
-          <CustomSelect
-            v-model="currentInversion"
-            :options="validInversions"
-            :disabled="!currentExtension || isNonTertianChord"
-          />
-        </label>
+        <!-- Combined root octave + inversion via slider -->
+
+
+        <!-- Voicing pattern -->
         <label class="edit-grid-item">
           <span class="label-text">Voicing</span>
           <CustomSelect
@@ -135,6 +120,34 @@
         </label>
       </div>
       <div class="dialog-content chord-preview">
+        <label class="transpose-control">
+          <span class="label-text">Transpose</span>
+          <input class="input-range"
+            type="range"
+            :min="transposeSliderMin"
+            :max="transposeSliderMax"
+            step="1"
+            :value="currentTranspose"
+            :disabled="transposeSliderDisabled"
+            @input="currentTranspose = Number($event.target.value)"
+          />
+          <!-- <div class="transpose-meta">
+            <button
+              class="transpose-reset"
+              type="button"
+              :disabled="transposeSliderDisabled || currentTranspose === 0"
+              @click="currentTranspose = 0"
+            >
+              Reset
+            </button>
+            <span class="transpose-value">{{ currentTranspose }}</span>
+          </div> -->
+        </label>
+        <KeyboardExtended
+          :highlighted-notes="previewNotesPlayable"
+          :start-octave="1"
+          :octaves="7"
+        />
         <div class="chord-preview-output">
           <div class="chord-preview-summary">
             <div class="chord-preview-symbol">
@@ -146,17 +159,17 @@
               <span>{{ previewNotesHtml }}</span>
             </div>
           </div>
-           <button
-             type="button"
-             class="chord-preview-play-button"
-             :class="{ 'is-pressed': isPreviewPressed }"
-             :disabled="!hasChordForPreview"
-             @pointerdown.prevent.stop="onPreviewPressStart($event)"
-             @pointerup.prevent.stop="onPreviewPressEnd($event)"
-             @pointerleave.prevent.stop="onPreviewPressEnd($event)"
-             @pointercancel.prevent.stop="onPreviewPressEnd($event)"
-             @contextmenu.prevent
-           >
+          <button
+            type="button"
+            class="chord-preview-play-button"
+            :class="{ 'is-pressed': isPreviewPressed }"
+            :disabled="!hasChordForPreview"
+            @pointerdown.prevent.stop="onPreviewPressStart($event)"
+            @pointerup.prevent.stop="onPreviewPressEnd($event)"
+            @pointerleave.prevent.stop="onPreviewPressEnd($event)"
+            @pointercancel.prevent.stop="onPreviewPressEnd($event)"
+            @contextmenu.prevent
+          >
             <Headphones
               aria-hidden="true"
               :stroke-width="1.5"
@@ -165,11 +178,6 @@
             />
           </button>
         </div>
-        <KeyboardExtended
-          :highlighted-notes="previewNotesPlayable"
-          :start-octave="1"
-          :octaves="7"
-        />
       </div>
       <div class="dialog-buttons">
         <button type="button" @click="onClose">Cancel</button>
@@ -187,7 +195,7 @@
 
 <script setup>
 import { ref, computed, reactive, watch, nextTick } from "vue";
-import { X, Music2, Volume1, Headphones } from "lucide-vue-next";
+import { X, Music2, Headphones } from "lucide-vue-next";
 import CustomSelect from "./CustomSelect.vue";
 import KeyboardExtended from "./KeyboardExtended.vue";
 import { Scale, Note } from "@tonaljs/tonal";
@@ -226,13 +234,16 @@ const emit = defineEmits(["save", "close", "preview-start", "preview-stop"]);
 const dlg = ref(null);
 const isPreviewPressed = ref(false);
 
- // Mode flag only; all other selections are kept separate per mode
+// Mode flag only; all other selections are kept separate per mode
 const model = ref({ mode: "scale" });
+
+const ROOT_OCTAVE_OPTIONS = [2, 3, 4, 5];
+const DEFAULT_ROOT_OCTAVE = 4;
 
 // Independent state per mode
 const stateScale = reactive({
   degree: "1", // default to tonic degree
-  octave: 4,
+  octave: DEFAULT_ROOT_OCTAVE,
   extension: DEFAULT_EXTENSION,
   inversion: "root",
   voicing: "close",
@@ -241,7 +252,7 @@ const stateScale = reactive({
 const stateFree = reactive({
   root: "C",
   type: "major", // or "minor"
-  octave: 4,
+  octave: DEFAULT_ROOT_OCTAVE,
   extension: DEFAULT_EXTENSION,
   inversion: "root",
   voicing: "close",
@@ -250,15 +261,23 @@ const stateFree = reactive({
 const previousScaleExtension = ref(DEFAULT_EXTENSION);
 const previousFreeExtension = ref(DEFAULT_EXTENSION);
 
+function clampOctaveValue(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return DEFAULT_ROOT_OCTAVE;
+  if (ROOT_OCTAVE_OPTIONS.includes(num)) return num;
+  let closest = DEFAULT_ROOT_OCTAVE;
+  let minDiff = Infinity;
+  for (const opt of ROOT_OCTAVE_OPTIONS) {
+    const diff = Math.abs(opt - num);
+    if (diff < minDiff) {
+      closest = opt;
+      minDiff = diff;
+    }
+  }
+  return closest;
+}
+
 // Mode-bridged computed bindings for shared controls
-const currentOctave = computed({
-  get: () =>
-    model.value.mode === "scale" ? stateScale.octave : stateFree.octave,
-  set: (v) => {
-    if (model.value.mode === "scale") stateScale.octave = v;
-    else stateFree.octave = v;
-  },
-});
 const currentExtension = computed({
   get: () =>
     model.value.mode === "scale" ? stateScale.extension : stateFree.extension,
@@ -266,14 +285,6 @@ const currentExtension = computed({
     const normalized = normalizeExtensionValue(v);
     if (model.value.mode === "scale") stateScale.extension = normalized;
     else stateFree.extension = normalized;
-  },
-});
-const currentInversion = computed({
-  get: () =>
-    model.value.mode === "scale" ? stateScale.inversion : stateFree.inversion,
-  set: (v) => {
-    if (model.value.mode === "scale") stateScale.inversion = v;
-    else stateFree.inversion = v;
   },
 });
 const currentVoicing = computed({
@@ -437,17 +448,35 @@ const extensionOptions = computed(() =>
     : freeExtensionOptions.value
 );
 
-// Valid inversions based on current extension
-const validInversions = computed(() => {
-  const ext = currentExtension.value;
-  const chordType =
-    model.value.mode === "scale" ? scaleChordType.value : freeChordType.value;
-  const noteCount = extensionNoteCount(ext, chordType, chordRootPc.value);
+function computeValidInversions(ext, chordType, rootPc) {
+  const normalizedExt = normalizeExtensionValue(ext);
+  const noteCount = extensionNoteCount(normalizedExt, chordType, rootPc);
   const maxIndex = Math.max(0, noteCount - 1);
   return editInversions.filter((_, idx) => idx <= maxIndex);
-});
+}
 
-// All possible inversions for the dropdown
+// Valid inversion sets per mode
+const validInversionsScale = computed(() =>
+  computeValidInversions(
+    stateScale.extension,
+    scaleChordType.value,
+    scaleChordRootPc.value
+  )
+);
+const validInversionsFree = computed(() =>
+  computeValidInversions(
+    stateFree.extension,
+    freeChordType.value,
+    freeChordRootPc.value
+  )
+);
+const currentValidInversions = computed(() =>
+  model.value.mode === "scale"
+    ? validInversionsScale.value
+    : validInversionsFree.value
+);
+
+// All possible inversions for combination building
 const editInversions = ["root", "1st", "2nd", "3rd", "4th", "5th", "6th"];
 const voicingTypeOptions = ["close", "open", "drop2", "drop3", "spread"];
 const isNonTertianChord = computed(() => {
@@ -456,12 +485,100 @@ const isNonTertianChord = computed(() => {
   return chordIsNonTertian(baseType);
 });
 
+function buildTransposeMeta(mode) {
+  const inversions =
+    mode === "scale" ? validInversionsScale.value : validInversionsFree.value;
+  const combos = [];
+  for (const oct of ROOT_OCTAVE_OPTIONS) {
+    for (const inv of inversions) {
+      combos.push({ octave: oct, inversion: inv });
+    }
+  }
+  if (!combos.length) {
+    combos.push({ octave: DEFAULT_ROOT_OCTAVE, inversion: "root" });
+  }
+  let defaultIndex = combos.findIndex(
+    (c) => c.octave === DEFAULT_ROOT_OCTAVE && c.inversion === "root"
+  );
+  if (defaultIndex === -1) defaultIndex = 0;
+  return { combos, defaultIndex };
+}
+
+const transposeMetaScale = computed(() => buildTransposeMeta("scale"));
+const transposeMetaFree = computed(() => buildTransposeMeta("free"));
+const currentTransposeMeta = computed(() =>
+  model.value.mode === "scale"
+    ? transposeMetaScale.value
+    : transposeMetaFree.value
+);
+
+const transposeSliderMin = computed(
+  () => -currentTransposeMeta.value.defaultIndex
+);
+const transposeSliderMax = computed(
+  () =>
+    currentTransposeMeta.value.combos.length -
+    1 -
+    currentTransposeMeta.value.defaultIndex
+);
+const transposeSliderDisabled = computed(
+  () => transposeSliderMin.value === transposeSliderMax.value
+);
+
+const currentTranspose = computed({
+  get() {
+    const { combos, defaultIndex } = currentTransposeMeta.value;
+    if (!combos.length) return 0;
+    const state = model.value.mode === "scale" ? stateScale : stateFree;
+    const idx = combos.findIndex(
+      (c) => c.octave === state.octave && c.inversion === state.inversion
+    );
+    const activeIndex = idx === -1 ? defaultIndex : idx;
+    return activeIndex - defaultIndex;
+  },
+  set(raw) {
+    const { combos, defaultIndex } = currentTransposeMeta.value;
+    if (!combos.length) return;
+    const state = model.value.mode === "scale" ? stateScale : stateFree;
+    const value = Number.isFinite(raw) ? Math.trunc(raw) : 0;
+    const clampedOffset = Math.max(
+      transposeSliderMin.value,
+      Math.min(transposeSliderMax.value, value)
+    );
+    const targetIndex = Math.max(
+      0,
+      Math.min(combos.length - 1, defaultIndex + clampedOffset)
+    );
+    const combo = combos[targetIndex];
+    state.octave = combo.octave;
+    state.inversion = combo.inversion;
+  },
+});
+
+function applyLegacyTransposeToState(mode, steps) {
+  const offset = Number.isFinite(steps) ? Math.trunc(steps) : 0;
+  if (!offset) return;
+  const meta =
+    mode === "scale" ? transposeMetaScale.value : transposeMetaFree.value;
+  const combos = meta.combos;
+  if (!combos.length) return;
+  const state = mode === "scale" ? stateScale : stateFree;
+  const idx = combos.findIndex(
+    (c) => c.octave === state.octave && c.inversion === state.inversion
+  );
+  const startIndex = idx === -1 ? meta.defaultIndex : idx;
+  let targetIndex = startIndex + offset;
+  targetIndex = Math.max(0, Math.min(combos.length - 1, targetIndex));
+  const combo = combos[targetIndex];
+  state.octave = combo.octave;
+  state.inversion = combo.inversion;
+}
+
 // Skip watcher side-effects while we restore a saved pad state
 const isApplyingPadState = ref(false);
 
 // Derive base triad quality for the selected scale degree ("", "m", "dim", "aug")
 const baseQualityFromScale = computed(() => {
-  if (model.value.mode !== "scale") return "";
   const s = scaleNotes.value;
   if (!Array.isArray(s) || s.length < 3) return "";
   const deg = degreeNumber(stateScale.degree);
@@ -471,15 +588,16 @@ const baseQualityFromScale = computed(() => {
   return qualityFromTriad(triad, s[i]);
 });
 
-// Compute chord root from degree (scale mode) or free root
-const chordRootPc = computed(() => {
-  if (model.value.mode === "scale") {
-    const deg = degreeNumber(stateScale.degree);
-    const idx = Math.max(0, deg - 1);
-    return scaleNotes.value[idx] || "C";
-  }
-  return stateFree.root || "C";
+// Compute chord roots for each mode
+const scaleChordRootPc = computed(() => {
+  const deg = degreeNumber(stateScale.degree);
+  const idx = Math.max(0, deg - 1);
+  return scaleNotes.value[idx] || "C";
 });
+const freeChordRootPc = computed(() => stateFree.root || "C");
+const chordRootPc = computed(() =>
+  model.value.mode === "scale" ? scaleChordRootPc.value : freeChordRootPc.value
+);
 
 function determineScaleChordType() {
   const quality = baseQualityFromScale.value;
@@ -709,8 +827,15 @@ const previewChordData = computed(() => {
 const previewNotesAsc = computed(() => {
   const pcs = previewChordData.value.pcs;
   const pitchClasses = pcs && pcs.length ? pcs : [chordRootPc.value];
-  const base = pcsToAscending(pitchClasses, currentOctave.value);
-  const afterInv = applyInversion(base, currentInversion.value || "root");
+  const baseOctave =
+    model.value.mode === "scale" ? stateScale.octave : stateFree.octave;
+  const base = pcsToAscending(pitchClasses, baseOctave);
+  const afterInv = applyInversion(
+    base,
+    (model.value.mode === "scale"
+      ? stateScale.inversion
+      : stateFree.inversion) || "root"
+  );
   const afterVoicing = applyVoicing(afterInv, currentVoicing.value || "close");
   return sortByMidi(afterVoicing);
 });
@@ -775,7 +900,7 @@ function resetToDefaults() {
   const firstDegree =
     editChordOptions.value.length > 0 ? editChordOptions.value[0].degree : "I";
   stateScale.degree = firstDegree;
-  stateScale.octave = 4;
+  stateScale.octave = DEFAULT_ROOT_OCTAVE;
   const defaultScaleExt = normalizeExtensionValue(
     extensionOptionsForType(determineScaleChordType())[0] ?? DEFAULT_EXTENSION
   );
@@ -785,7 +910,7 @@ function resetToDefaults() {
 
   stateFree.root = "C";
   stateFree.type = "major";
-  stateFree.octave = 4;
+  stateFree.octave = DEFAULT_ROOT_OCTAVE;
   const defaultFreeExt = normalizeExtensionValue(
     allowedExtensionsForFreeType(stateFree.type)[0] ?? DEFAULT_EXTENSION
   );
@@ -835,6 +960,8 @@ watch(
       stateScale.extension = normalizeExtensionValue(
         opts[0] ?? DEFAULT_EXTENSION
       );
+      stateScale.octave = DEFAULT_ROOT_OCTAVE;
+      stateScale.inversion = "root";
     }
   }
 );
@@ -858,6 +985,8 @@ watch(
       stateFree.extension = normalizeExtensionValue(
         preferred ?? DEFAULT_EXTENSION
       );
+      stateFree.octave = DEFAULT_ROOT_OCTAVE;
+      stateFree.inversion = "root";
     }
   }
 );
@@ -867,16 +996,13 @@ watch(
   () => currentExtension.value,
   () => {
     if (isApplyingPadState.value) return;
-    const valid = validInversions.value;
-    const currentInv = currentInversion.value;
+    const valid = currentValidInversions.value;
+    const state = model.value.mode === "scale" ? stateScale : stateFree;
+    const currentInv = state.inversion;
 
     // If current inversion is not valid for this extension, reset to root
     if (!valid.includes(currentInv)) {
-      if (model.value.mode === "scale") {
-        stateScale.inversion = "root";
-      } else {
-        stateFree.inversion = "root";
-      }
+      state.inversion = "root";
     }
 
     // Always reset voicing when extension changes
@@ -885,6 +1011,7 @@ watch(
     } else {
       stateFree.voicing = "close";
     }
+    state.octave = DEFAULT_ROOT_OCTAVE;
   }
 );
 
@@ -902,6 +1029,7 @@ watch(
     }
     stateScale.inversion = "root";
     stateScale.voicing = "close";
+    stateScale.octave = DEFAULT_ROOT_OCTAVE;
   }
 );
 
@@ -929,6 +1057,7 @@ watch(
     }
     stateFree.inversion = "root";
     stateFree.voicing = "close";
+    stateFree.octave = DEFAULT_ROOT_OCTAVE;
   }
 );
 
@@ -992,20 +1121,24 @@ function applyPadState(s) {
   if (s.scale && typeof s.scale === "object") {
     if (s.scale.degree != null)
       stateScale.degree = normalizeDegree(s.scale.degree);
-    if (s.scale.octave != null) stateScale.octave = Number(s.scale.octave);
+    if (s.scale.octave != null)
+      stateScale.octave = clampOctaveValue(s.scale.octave);
     if (s.scale.extension != null)
       stateScale.extension = normalizeExtensionValue(s.scale.extension);
     if (s.scale.inversion) stateScale.inversion = String(s.scale.inversion);
     if (s.scale.voicing) stateScale.voicing = String(s.scale.voicing);
+    applyLegacyTransposeToState("scale", s.scale.transpose);
   }
   if (s.free && typeof s.free === "object") {
     if (s.free.root) stateFree.root = String(s.free.root);
     if (s.free.type) stateFree.type = String(s.free.type);
-    if (s.free.octave != null) stateFree.octave = Number(s.free.octave);
+    if (s.free.octave != null)
+      stateFree.octave = clampOctaveValue(s.free.octave);
     if (s.free.extension != null)
       stateFree.extension = normalizeExtensionValue(s.free.extension);
     if (s.free.inversion) stateFree.inversion = String(s.free.inversion);
     if (s.free.voicing) stateFree.voicing = String(s.free.voicing);
+    applyLegacyTransposeToState("free", s.free.transpose);
   }
 
   previousScaleExtension.value = stateScale.extension;
