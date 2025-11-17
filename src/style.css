@@ -128,7 +128,9 @@ input[type="range"]::-webkit-slider-thumb {
   width: var(--range-thumb-size);
   height: var(--range-thumb-size);
   background: var(--color-text);
+  /*background-color: var(--color-layer-0);*/
   border-radius: 50%;
+  border: 1px solid var(--color-text);
   margin-top: calc(var(--range-thumb-size) / 2 * -1 + 1px / 2);
 }
 
@@ -633,7 +635,7 @@ dialog:open {
 
 .edit-grid-item {
   flex-grow: 1;
-  flex-basis: 40%;
+  /*flex-basis: 40%;*/
 }
 
 .chord-preview-output {
@@ -775,7 +777,7 @@ dialog:open {
   align-items: center;
 
   & select {
-    padding: 0 var(--space-1);
+    padding: 0 var(--space-4) 0 var(--space-1);
     appearance: none;
     grid-area: 1 / -1 / 1 / -1;
   }
@@ -784,6 +786,7 @@ dialog:open {
     grid-area: 1 / -1 / 1 / -1;
     justify-self: end;
     margin-right: var(--space-1);
+    pointer-events: none;
   }
 }
 
@@ -795,6 +798,10 @@ dialog:open {
 
 .flex-grow-1 {
   flex-grow: 1;
+}
+
+.flex-basis-40 {
+  flex-basis: 40%;
 }
 
 .flex-grow-2 {

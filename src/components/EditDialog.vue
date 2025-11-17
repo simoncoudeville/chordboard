@@ -76,7 +76,7 @@
           </label>
         </template>
         <template v-else>
-          <label class="edit-grid-item">
+          <label class="edit-grid-item flex-basis-40">
             <span class="label-text">Root</span>
             <CustomSelect
               v-model="stateFree.root"
@@ -86,7 +86,7 @@
               wrapper-class="select-scale"
             />
           </label>
-          <label class="edit-grid-item">
+          <label class="edit-grid-item flex-basis-40">
             <span class="label-text">Type</span>
             <CustomSelect
               v-model="stateFree.type"
@@ -108,7 +108,6 @@
 
         <!-- Combined root octave + inversion via slider -->
 
-
         <!-- Voicing pattern -->
         <label class="edit-grid-item">
           <span class="label-text">Voicing</span>
@@ -122,7 +121,9 @@
       <div class="dialog-content chord-preview">
         <label class="transpose-control">
           <span class="label-text">Transpose</span>
-          <input class="input-range"
+
+          <input
+            class="input-range"
             type="range"
             :min="transposeSliderMin"
             :max="transposeSliderMax"
@@ -131,17 +132,7 @@
             :disabled="transposeSliderDisabled"
             @input="currentTranspose = Number($event.target.value)"
           />
-          <!-- <div class="transpose-meta">
-            <button
-              class="transpose-reset"
-              type="button"
-              :disabled="transposeSliderDisabled || currentTranspose === 0"
-              @click="currentTranspose = 0"
-            >
-              Reset
-            </button>
-            <span class="transpose-value">{{ currentTranspose }}</span>
-          </div> -->
+
         </label>
         <KeyboardExtended
           :highlighted-notes="previewNotesPlayable"
@@ -960,8 +951,6 @@ watch(
       stateScale.extension = normalizeExtensionValue(
         opts[0] ?? DEFAULT_EXTENSION
       );
-      stateScale.octave = DEFAULT_ROOT_OCTAVE;
-      stateScale.inversion = "root";
     }
   }
 );
@@ -985,8 +974,6 @@ watch(
       stateFree.extension = normalizeExtensionValue(
         preferred ?? DEFAULT_EXTENSION
       );
-      stateFree.octave = DEFAULT_ROOT_OCTAVE;
-      stateFree.inversion = "root";
     }
   }
 );
@@ -1011,7 +998,6 @@ watch(
     } else {
       stateFree.voicing = "close";
     }
-    state.octave = DEFAULT_ROOT_OCTAVE;
   }
 );
 
