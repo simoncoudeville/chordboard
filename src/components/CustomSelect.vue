@@ -20,7 +20,7 @@
     <ChevronsUpDown
       class="custom-select-icon"
       aria-hidden="true"
-      :stroke-width="1.25"
+      :stroke-width="1.5"
       :size="16"
       :absoluteStrokeWidth="true"
     />

@@ -139,7 +139,7 @@
               <ChevronDown
                 aria-hidden="true"
                 :stroke-width="1.5"
-                :size="20"
+                :size="16"
                 :absoluteStrokeWidth="true"
               />
               <span class="sr-only">Shift down</span>
@@ -157,7 +157,7 @@
               <ChevronUp
                 aria-hidden="true"
                 :stroke-width="1.5"
-                :size="20"
+                :size="16"
                 :absoluteStrokeWidth="true"
               />
               <span class="sr-only">Shift up</span>
@@ -388,11 +388,8 @@ const editChordOptions = computed(() =>
       props.globalScaleRoot,
       props.globalScaleType
     );
-    // Add 7 to dominant (degree V) display (only if not already diminished/augmented)
-    let display = `${rootDisplay}${suffix}`;
-    if (i === 4 && suffix === "") {
-      display = `${rootDisplay}7`;
-    }
+    const romanDisplay = ROMAN_DEGREES[i] || String(i + 1);
+    let display = `${romanDisplay} ${rootDisplay}${suffix}`;
     return {
       degree: String(i + 1),
       roman: ROMAN_DEGREES[i] || String(i + 1),

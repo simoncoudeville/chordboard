@@ -22,10 +22,24 @@ export function useMidi() {
     console.debug(msg);
   }
 
+  function serializeOutputs(list) {
+    if (!Array.isArray(list)) return [];
+    return list.map((output, idx) => {
+      const fallback = `Device ${idx + 1}`;
+      return {
+        id: output?.id ?? `${idx}`,
+        name: output?.name || output?.manufacturer || fallback,
+        manufacturer: output?.manufacturer || "",
+      };
+    });
+  }
+
   function renderDevices() {
-    outputs.value = WebMidi.outputs;
-    if (!selectedOutputId.value && outputs.value.length)
-      selectedOutputId.value = outputs.value[0].id;
+    const devices = serializeOutputs(WebMidi.outputs);
+    outputs.value = devices;
+    if (!selectedOutputId.value && devices.length) {
+      selectedOutputId.value = devices[0].id;
+    }
   }
 
   function applySavedMidiSettings() {

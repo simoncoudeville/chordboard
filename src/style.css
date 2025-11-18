@@ -31,22 +31,27 @@
   --color-gray-150: hsl(0 0% 15%);
   --color-gray-200: hsl(0 0% 20%);
   --color-gray-300: hsl(0 0% 30%);
-  --color-gray-400: hsl(0 0% 55%);
-  --color-gray-450: hsl(0 0% 70%);
-  --color-gray-500: hsl(0 0% 95%);
+  --color-gray-400: hsl(0 0% 40%);
+  --color-gray-450: hsl(0 0% 45%);
+  --color-gray-500: hsl(0 0% 50%);
+  --color-gray-550: hsl(0 0% 55%);
+  --color-gray-600: hsl(0 0% 60%);
+  --color-gray-700: hsl(0 0% 70%);
+  --color-gray-800: hsl(0 0% 80%);
+  --color-gray-900: hsl(0 0% 900%);
+  --color-gray-950: hsl(0 0% 95%);
 
   /* Converted to OKLCH for perceptual uniformity; hex kept as comment fallback */
-  --color-warning: oklch(80% 0.1 60);
-  --color-valid: oklch(80% 0.1 140);
-  --color-scale: oklch(80% 0.1 290);
+  --color-warning: oklch(0.8 0.17 60);
+  --color-valid: oklch(80% 0.17 140);
 
   --color-layer-0: var(--color-gray-050);
-  --color-layer-1: var(--color-gray-150);
+  --color-layer-1: var(--color-gray-200);
   --color-layer-2: var(--color-gray-300);
-  --color-layer-3: var(--color-gray-400);
-  --color-text: var(--color-gray-500);
-  --color-text-meta: var(--color-gray-400);
-  --color-border: var(--color-gray-150);
+  --color-layer-3: var(--color-gray-550);
+  --color-text: var(--color-gray-950);
+  --color-text-meta: var(--color-gray-600);
+  --color-border: var(--color-gray-200);
 }
 
 * {
@@ -169,7 +174,8 @@ button {
   -webkit-tap-highlight-color: transparent; /* remove iOS/Android tap highlight */
 
   &:disabled {
-    opacity: 0.5;
+    /* opacity: 0.5; */
+    color: var(--color-text-meta);
     cursor: not-allowed;
   }
 }
@@ -192,7 +198,7 @@ button {
 }
 
 .icon-button {
-  padding: var(--space-0-5);
+  padding: var(--space-1);
   /* width: var(--space-4); */
   /* aspect-ratio: 1; */
   display: flex;
@@ -254,10 +260,12 @@ button {
   /* background-color: var(--color-warning); */
   /* color: var(--color-layer-0); */
   color: var(--color-warning);
-  padding: var(--space-0-5);
+  padding: var(--space-1);
+  margin-top: -2px;
   position: fixed;
   inset: auto 0 0 0;
-  background-color: var(--color-layer-0);
+  /* background-image: linear-gradient(to top, var(--color-layer-0), transparent); */
+  /* background-color: var(--color-layer-0); */
 }
 
 .button.md {
@@ -344,10 +352,10 @@ dialog:open {
   margin-bottom: calc(var(--space-1) * -1);
   margin-right: calc(var(--space-1) * -1);
 }
-
+/* 
 .dialog-close-icon {
   stroke: var(--color-layer-3);
-}
+} */
 
 .dialog-content {
   padding: 0 var(--space-2-5);
@@ -380,7 +388,8 @@ dialog:open {
 .midi-status-container {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  margin: calc(var(--space-0-5) * -1);
+  /* gap: var(--space-1); */
   /* margin-right: calc(var(--space-1) * -1); */
 }
 
@@ -685,7 +694,7 @@ dialog:open {
   gap: var(--space-0-5);
   justify-content: space-between;
   align-items: center;
-  margin-bottom: calc(var(--space-1) * -1);
+  margin-bottom: calc(var(--space-1-5) * -1);
 
   .label-text {
     padding-bottom: 0;
@@ -801,9 +810,10 @@ dialog:open {
 }
 
 .custom-select-icon {
-  stroke: var(--color-border);
-  stroke: var(--color-layer-2);
+  /* stroke: var(--color-border); */
+  /* stroke: var(--color-layer-2); */
   /* width: var(--space-2); */
+  stroke: var(--color-text-meta);
 }
 
 .flex-grow-1 {
