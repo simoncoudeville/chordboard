@@ -7,7 +7,6 @@
     <div class="midi-status-container">
       <button
         class="icon-button midi"
-        :class="midiEnabled && outputs.length > 0 ? '' : 'warning'"
         type="button"
         @click="openMidiDialog"
         :disabled="!midiSupported"
@@ -54,14 +53,17 @@
     @delete="requestDeletePad"
     @edit="openEditDialog"
   />
-  <button
-    v-if="showMidiWarningButton"
-    class="button-warning"
-    type="button"
-    @click="openMidiDialog"
-  >
-    {{ midiWarningLabel }}
-  </button>
+  <div v-if="showMidiWarningButton" class="warning">
+    <button class="button-warning" type="button" @click="openMidiDialog">
+      <OctagonAlert
+        aria-hidden="true"
+        :stroke-width="1.5"
+        :size="16"
+        :absoluteStrokeWidth="true"
+      />
+      {{ midiWarningLabel }}
+    </button>
+  </div>
 
   <EditDialog
     ref="editDialogRef"
@@ -130,6 +132,7 @@ import {
   BadgeInfo,
   BadgeQuestionMark,
   Badge,
+  OctagonAlert,
 } from "lucide-vue-next";
 import { Icon } from "lucide-vue-next";
 const iconStrokeWidth = 1.5;

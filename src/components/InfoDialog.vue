@@ -21,11 +21,31 @@
       </div>
       <div class="dialog-content">
         <p class="color-meta">
-          Chordboard is a web-based chord pad app. It can send MIDI notes over USB to external gear if your browser supports the Web MIDI API.
+          Chordboard is a web-based chord pad app. It can send MIDI notes over
+          USB to external gear if your browser supports the Web MIDI API.
         </p>
       </div>
       <div class="dialog-content">
-        <p :class="midiSupported ? 'color-valid' : 'color-warning'">
+        <p
+          class="flex align-center gap-1"
+          :class="midiSupported ? 'color-valid' : 'color-warning'"
+        >
+          <BadgeCheck
+            v-if="midiSupported"
+            class="dialog-info-icon"
+            aria-hidden="true"
+            :stroke-width="1.5"
+            :size="16"
+            :absoluteStrokeWidth="true"
+          />
+          <Frown
+            v-else
+            class="dialog-info-icon"
+            aria-hidden="true"
+            :stroke-width="1.5"
+            :size="16"
+            :absoluteStrokeWidth="true"
+          />
           {{ midiSupportMessage }}
         </p>
       </div>
@@ -36,7 +56,8 @@
             href="https://www.google.com/search?q=android+developer+mode&rlz=1C5GCCM_en&oq=android+developer+mode&gs_lcrp=EgZjaHJvbWUyCQgAEEUYORiABDIHCAEQABiABDIHCAIQABiABDIHCAMQABiABDIHCAQQABiABDIHCAUQABiABDIHCAYQABiABDIHCAcQABiABDIHCAgQABiABDIHCAkQABiABNIBCDUxNDNqMGoxqAIAsAIA&sourceid=chrome&ie=UTF-8"
             >Developer Mode</a
           >
-          to allow MIDI over USB. Then connect your device via USB-C and select it in the MIDI settings.
+          to allow MIDI over USB. Then connect your device via USB-C and select
+          it in the MIDI settings.
         </p>
       </div>
       <div class="dialog-content" v-if="midiSupported">
@@ -60,7 +81,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { X } from "lucide-vue-next";
+import { X, BadgeCheck, Frown } from "lucide-vue-next";
 
 const props = defineProps({
   midiSupported: { type: Boolean, default: true },

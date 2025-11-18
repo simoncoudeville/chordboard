@@ -256,16 +256,34 @@ button {
   font-weight: normal;
 }
 
+.warning {
+  position: fixed;
+  bottom: 0;
+  inset: auto 0 0 0;
+  /* display: flex;
+  align-items: center;
+  justify-content: center; */
+}
+
 .button-warning {
+  display: block;
+  width: 100%;
   /* background-color: var(--color-warning); */
   /* color: var(--color-layer-0); */
   color: var(--color-warning);
-  padding: var(--space-1);
-  margin-top: -2px;
-  position: fixed;
-  inset: auto 0 0 0;
+  padding: var(--space-1) var(--space-1-5);
+  /* border-radius: var(--radius); */
+  /* margin-bottom: var(--space-1-5); */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  /* margin-left: auto;
+  margin-right: auto; */
+  /* left: auto;
+  right: auto; */
   /* background-image: linear-gradient(to top, var(--color-layer-0), transparent); */
-  /* background-color: var(--color-layer-0); */
+  background-color: var(--color-layer-0);
 }
 
 .button.md {
@@ -814,6 +832,26 @@ dialog:open {
   /* stroke: var(--color-layer-2); */
   /* width: var(--space-2); */
   stroke: var(--color-text-meta);
+}
+
+.flex {
+  display: flex;
+}
+
+.align-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-1 {
+  gap: var(--space-1);
+}
+
+.gap-1-5 {
+  gap: var(--space-1-5);
 }
 
 .flex-grow-1 {

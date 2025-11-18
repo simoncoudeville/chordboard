@@ -22,7 +22,9 @@
       <!-- State machine per design -->
       <template v-if="!midiSupported">
         <div class="dialog-content">
-          <p class="color-warning">Web MIDI not supported</p>
+          <p class="color-warning flex items-center gap-1">
+            Web MIDI not supported
+          </p>
           <p class="color-meta">
             Your browser doesn’t support Web MIDI. Try Chrome or Edge.
           </p>
@@ -32,7 +34,9 @@
         <!-- 1) Permission required -->
         <template v-if="permissionOnly && permission !== 'denied'">
           <div class="dialog-content">
-            <p class="color-warning">MIDI permission required</p>
+            <p class="color-warning flex items-center gap-1">
+              MIDI permission required
+            </p>
             <p class="color-meta">
               To use external MIDI devices, allow access when your browser
               prompts you.
@@ -52,7 +56,7 @@
         <!-- 1.1) Permission denied -->
         <template v-else-if="permissionOnly && permission === 'denied'">
           <div class="dialog-content">
-            <p class="color-warning">MIDI denied</p>
+            <p class="color-warning flex items-center gap-1">MIDI denied</p>
             <p class="color-meta">
               MIDI permission was blocked. To grant access again, change this
               site's MIDI permission in your browser settings, then reopen this
@@ -64,7 +68,9 @@
         <!-- 1.2) Permission granted but not connected yet -->
         <template v-else-if="permission === 'granted' && !midiEnabled">
           <div class="dialog-content">
-            <p class="color-warning">MIDI allowed but not enabled</p>
+            <p class="color-warning flex items-center gap-1">
+              MIDI allowed but not enabled
+            </p>
             <p class="color-meta">Enable MIDI to continue.</p>
           </div>
           <div class="dialog-content">
@@ -81,7 +87,14 @@
         <!-- 2) Connected but no devices detected -->
         <template v-else-if="midiEnabled && outputs.length === 0">
           <div class="dialog-content">
-            <p class="color-warning">No MIDI devices detected</p>
+            <p class="color-warning flex items-center gap-1">
+              <OctagonAlert
+                aria-hidden="true"
+                :stroke-width="1.5"
+                :size="16"
+                :absoluteStrokeWidth="true"
+              />No MIDI devices detected
+            </p>
             <p class="color-meta">
               Check your MIDI device and try scanning for devices.
             </p>
@@ -178,7 +191,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { X } from "lucide-vue-next";
+import { X, OctagonAlert } from "lucide-vue-next";
 import CustomSelect from "./CustomSelect.vue";
 
 const props = defineProps({
