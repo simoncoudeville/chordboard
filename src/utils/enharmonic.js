@@ -1,25 +1,71 @@
 import { Note, Scale } from "@tonaljs/tonal";
 
-/**
- * Sharp keys prefer sharp accidentals: G, D, A, E, B, F#, C#
- * Flat keys prefer flat accidentals: F, Bb, Eb, Ab, Db, Gb, Cb
- */
-const SHARP_KEYS = ["G", "D", "A", "E", "B", "F#", "C#"];
-const FLAT_KEYS = ["F", "Bb", "Eb", "Ab", "Db", "Gb", "Cb"];
+const MAJOR_SHARP_KEYS = new Set(["C", "G", "D", "A", "E", "B", "F#"]);
+const MAJOR_FLAT_KEYS = new Set(["F", "Bb", "Eb", "Ab", "Db", "Gb"]);
 
-const TITLE_CASE_CACHE = new Map();
+function isMinorLike(type = "") {
+  return String(type).toLowerCase().includes("minor");
+}
 
-function toTitleCase(input = "") {
-  if (!input) return "";
-  if (TITLE_CASE_CACHE.has(input)) return TITLE_CASE_CACHE.get(input);
-  const formatted = input
-    .split(/\s+/)
-    .map((part) =>
-      part.length ? part[0].toUpperCase() + part.slice(1).toLowerCase() : part
-    )
-    .join(" ");
-  TITLE_CASE_CACHE.set(input, formatted);
-  return formatted;
+function sanitizePitchClass(value) {
+  if (!value) return "C";
+  try {
+    const info = Note.get(value);
+    if (info?.pc) return info.pc;
+  } catch {}
+  const match = String(value).match(/^[A-Ga-g][#b]?/);
+  if (match) {
+    const [letter, accidental] = [match[0][0], match[0].slice(1)];
+    return letter.toUpperCase() + accidental;
+  }
+  return "C";
+}
+
+function normalizePitchClassToStyle(pc, style) {
+  if (!pc) return pc;
+  if (style !== "flat" && style !== "sharp") return pc;
+  const wantsFlat = style === "flat";
+  const wantsSharp = style === "sharp";
+  if (wantsFlat && !pc.includes("#")) return pc;
+  if (wantsSharp && !pc.includes("b")) return pc;
+
+  let current = pc;
+  const visited = new Set();
+  while (!visited.has(current)) {
+    visited.add(current);
+    try {
+      const next = Note.enharmonic(current);
+      if (!next || next === current) break;
+      current = next;
+      if (wantsFlat && !current.includes("#")) return current;
+      if (wantsSharp && !current.includes("b")) return current;
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
+function normalizeKeyRootForMode(root, type) {
+  const minorLike = isMinorLike(type);
+  const preferStyle = minorLike ? "sharp" : "flat";
+  const pc = sanitizePitchClass(root);
+  return normalizePitchClassToStyle(pc, preferStyle);
+}
+
+function sanitizeRelativeMajor(rootPc) {
+  const transposed = Note.transpose(rootPc || "C", "m3");
+  const pc = sanitizePitchClass(transposed || "C");
+  return normalizePitchClassToStyle(pc, "flat");
+}
+
+export function getAccidentalStyleForKey(root, type = "major") {
+  const minorLike = isMinorLike(type);
+  const keyRoot = normalizeKeyRootForMode(root, type);
+  const keyToCheck = minorLike ? sanitizeRelativeMajor(keyRoot) : keyRoot;
+  if (MAJOR_FLAT_KEYS.has(keyToCheck)) return "flat";
+  if (MAJOR_SHARP_KEYS.has(keyToCheck)) return "sharp";
+  return "sharp";
 }
 
 function accidentalScore(note = "") {
@@ -57,43 +103,15 @@ export function simplifyNoteName(note) {
  * Uses Tonal.js to get the canonical tonic from the scale.
  */
 export function preferredScaleRoot(root, type = "major") {
-  if (!root) return "C";
-  const scale = Scale.get(`${root} ${type}`);
-  // Use Tonal's canonical tonic if available
-  if (scale && scale.tonic) {
-    return scale.tonic;
-  }
-  return root;
+  const style = getAccidentalStyleForKey(root, type);
+  return normalizeNoteToStyle(root || "C", style) || "C";
 }
 
 export function formatScaleName(root, type = "major") {
-  const preferredRoot = preferredScaleRoot(root, type);
-  // User preference: keep ASCII accidentals and use lowercase scale type
-  const displayRoot = preferredRoot; // e.g. Ab, C#, Gb
-  const displayType = String(type || "").toLowerCase(); // "major" or "minor"
+  const style = getAccidentalStyleForKey(root, type);
+  const displayRoot = normalizeNoteToStyle(root || "C", style);
+  const displayType = String(type || "").toLowerCase();
   return `${displayRoot} ${displayType}`.trim();
-}
-
-/**
- * Determine whether to prefer flats or sharps based on the scale.
- * For minor scales, uses the relative major to decide.
- * @param {string} root - Scale root (e.g., "D", "Bb")
- * @param {string} type - Scale type (e.g., "major", "minor")
- * @returns {boolean} - true if flats should be preferred
- */
-export function preferFlatsForScale(root, type = "major") {
-  if (!root) return false;
-
-  let keyToCheck = root;
-
-  // For minor keys, check the relative major
-  if (type === "minor") {
-    // Transpose up a minor third to get relative major
-    keyToCheck = Note.transpose(root, "m3");
-  }
-
-  // Check if this key is in the flat keys list
-  return FLAT_KEYS.includes(keyToCheck);
 }
 
 /**
@@ -104,35 +122,8 @@ export function preferFlatsForScale(root, type = "major") {
  * @returns {string} - Formatted note name with appropriate sharp/flat
  */
 export function formatNoteName(note, globalScale = "C", scaleType = "major") {
-  if (!note) return "";
-
-  const simplified = simplifyNoteName(note);
-  const info = Note.get(simplified);
-  if (!info || !info.pc) return note;
-
-  const pc = info.pc;
-  const octave = info.oct;
-
-  // Determine if we should use sharps or flats based on the scale
-  const useFlats = preferFlatsForScale(globalScale, scaleType);
-
-  // If note is natural (C, D, E, F, G, A, B), return as-is
-  if (!pc.includes("#") && !pc.includes("b")) {
-    return typeof octave === "number" ? `${pc}${octave}` : pc;
-  }
-
-  // Get enharmonic equivalent
-  let formatted;
-  if (useFlats) {
-    // Prefer flat notation
-    formatted = pc.includes("#") ? Note.enharmonic(pc) : pc;
-  } else {
-    // Prefer sharp notation
-    formatted = pc.includes("b") ? Note.enharmonic(pc) : pc;
-  }
-
-  // Append octave if present
-  return typeof octave === "number" ? `${formatted}${octave}` : formatted;
+  const style = getAccidentalStyleForKey(globalScale, scaleType);
+  return normalizeNoteToStyle(note, style);
 }
 
 /**
@@ -147,104 +138,43 @@ export function formatChordSymbol(
   globalScale = "C",
   scaleType = "major"
 ) {
-  if (!chordSymbol) return "";
-
-  // Extract root note (everything before the first lowercase letter, number, or special char)
-  const match = chordSymbol.match(/^([A-G][#b]?)/);
-  if (!match) return chordSymbol;
-
-  const root = match[1];
-  const suffix = chordSymbol.slice(root.length);
-
-  const formattedRoot = formatNoteName(root, globalScale, scaleType);
-  return formattedRoot + suffix;
+  const style = getAccidentalStyleForKey(globalScale, scaleType);
+  return normalizeChordNameToStyle(chordSymbol, style);
 }
 
-/**
- * Free-mode helpers: prefer sharps/flats without relying on global scale
- */
-
-/**
- * From a root string as chosen in UI, infer preference:
- *  - contains 'b'  => prefer flats (true)
- *  - contains '#'  => prefer sharps (false)
- *  - natural       => null (unknown)
- */
-export function preferFlatsFromRoot(rootPc) {
-  if (!rootPc) return null;
-  if (/#/.test(rootPc)) return false;
-  if (/b/.test(rootPc)) return true;
-  return null;
-}
-
-function formatPcByPreference(pc, preferFlats) {
-  if (!pc) return pc;
-  if (preferFlats === true) {
-    return pc.includes("#") ? Note.enharmonic(pc) : pc;
-  }
-  if (preferFlats === false) {
-    return pc.includes("b") ? Note.enharmonic(pc) : pc;
-  }
-  return pc;
-}
-
-/**
- * Format a single note (with optional octave) by a flat/sharp preference.
- * If note is natural, it is returned unchanged.
- */
-export function formatNoteNameByPreference(note, preferFlats) {
+export function normalizeNoteToStyle(note, style = "sharp") {
   if (!note) return "";
   const simplified = simplifyNoteName(note);
   const info = Note.get(simplified);
   if (!info || !info.pc) return note;
-
-  const pc = info.pc;
-  const octave = info.oct;
-
-  let formattedPc = pc;
-  if (pc.includes("#") || pc.includes("b")) {
-    formattedPc = formatPcByPreference(pc, preferFlats);
-  }
-
-  return typeof octave === "number" ? `${formattedPc}${octave}` : formattedPc;
+  const targetPc = normalizePitchClassToStyle(info.pc, style);
+  return typeof info.oct === "number" ? `${targetPc}${info.oct}` : targetPc;
 }
 
-/**
- * Format a chord symbol's root by a flat/sharp preference.
- */
-export function formatChordSymbolByPreference(chordSymbol, preferFlats) {
-  if (!chordSymbol) return "";
-  const match = chordSymbol.match(/^([A-G][#b]?)/);
-  if (!match) return chordSymbol;
-  const root = match[1];
-  const suffix = chordSymbol.slice(root.length);
-  const formattedRoot = formatNoteNameByPreference(root, preferFlats);
-  return formattedRoot + suffix;
-}
-
-/**
- * Given a set of pitch classes or note names, choose whether flats yield a
- * cleaner overall spelling than sharps. Returns a boolean preference.
- * If tied, falls back to the provided fallback (default: prefer sharps=false).
- */
-export function choosePreferFlatsForPcs(pcs = [], fallbackPreferFlats = false) {
-  if (!Array.isArray(pcs) || pcs.length === 0) return fallbackPreferFlats;
-
-  const scoreFor = (preferFlats) => {
-    let total = 0;
-    for (const n of pcs) {
-      const info = Note.get(n);
-      const pc = (info && info.pc) || String(n);
-      const spelled = formatPcByPreference(pc, preferFlats);
-      total += accidentalScore(spelled);
+export function normalizeChordNameToStyle(chordName, style = "sharp") {
+  if (!chordName) return "";
+  const slashIndex = chordName.indexOf("/");
+  const mainPart = slashIndex >= 0 ? chordName.slice(0, slashIndex) : chordName;
+  const slashPart = slashIndex >= 0 ? chordName.slice(slashIndex + 1) : "";
+  const rootMatch = mainPart.match(/^([A-Ga-g][#b]?)/);
+  if (!rootMatch) return chordName;
+  const root = rootMatch[1];
+  const normalizedRoot = normalizeNoteToStyle(root, style);
+  let formatted = normalizedRoot + mainPart.slice(root.length);
+  if (slashIndex >= 0) {
+    if (slashPart) {
+      const bassMatch = slashPart.match(/^([A-Ga-g][#b]?)/);
+      if (bassMatch) {
+        const normalizedBass = normalizeNoteToStyle(bassMatch[1], style);
+        formatted += `/${normalizedBass}${slashPart.slice(
+          bassMatch[1].length
+        )}`;
+      } else {
+        formatted += `/${slashPart}`;
+      }
+    } else {
+      formatted += "/";
     }
-    return total;
-  };
-
-  const flatScore = scoreFor(true);
-  const sharpScore = scoreFor(false);
-
-  if (flatScore < sharpScore) return true;
-  if (sharpScore < flatScore) return false;
-  return fallbackPreferFlats;
+  }
+  return formatted;
 }
