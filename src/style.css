@@ -681,12 +681,22 @@ dialog:open {
 
 .transpose-control {
   display: flex;
-  flex-direction: column;
+  /* flex-direction: column; */
   gap: var(--space-0-5);
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: calc(var(--space-1) * -1);
+
+  .label-text {
+    padding-bottom: 0;
+  }
 }
 
-.transpose-control input[type="range"] {
-  width: 100%;
+.transpose-buttons {
+  display: flex;
+  align-items: center;
+  margin: calc(var(--space-1) * -1);
+  /* gap: var(--space-1); */
 }
 
 .transpose-meta {

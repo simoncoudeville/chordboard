@@ -10,13 +10,12 @@
           aria-label="Close"
         >
           <X
-        class="dialog-close-icon"
-        aria-hidden="true"
-        :stroke-width="1.5"
-        :size="16"
-        :absoluteStrokeWidth="true"
-      />
-
+            class="dialog-close-icon"
+            aria-hidden="true"
+            :stroke-width="1.5"
+            :size="16"
+            :absoluteStrokeWidth="true"
+          />
           <span class="sr-only">Close</span>
         </button>
       </div>

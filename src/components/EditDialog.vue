@@ -119,21 +119,51 @@
         </label>
       </div>
       <div class="dialog-content chord-preview">
-        <label class="transpose-control">
+        <div
+          class="transpose-control"
+          role="group"
+          aria-label="Transpose control"
+        >
           <span class="label-text">Transpose</span>
-
-          <input
-            class="input-range"
-            type="range"
-            :min="transposeSliderMin"
-            :max="transposeSliderMax"
-            step="1"
-            :value="currentTranspose"
-            :disabled="transposeSliderDisabled"
-            @input="currentTranspose = Number($event.target.value)"
-          />
-
-        </label>
+          <div class="transpose-buttons">
+            <button
+              type="button"
+              class="icon-button transpose-button"
+              :disabled="!canTransposeDown"
+              @pointerdown.prevent.stop="startTransposeHold(-1, $event)"
+              @pointerup="stopTransposeHold"
+              @pointerleave="stopTransposeHold"
+              @pointercancel="stopTransposeHold"
+              @contextmenu.prevent
+            >
+              <ChevronDown
+                aria-hidden="true"
+                :stroke-width="1.5"
+                :size="20"
+                :absoluteStrokeWidth="true"
+              />
+              <span class="sr-only">Shift down</span>
+            </button>
+            <button
+              type="button"
+              class="icon-button transpose-button"
+              :disabled="!canTransposeUp"
+              @pointerdown.prevent.stop="startTransposeHold(1, $event)"
+              @pointerup="stopTransposeHold"
+              @pointerleave="stopTransposeHold"
+              @pointercancel="stopTransposeHold"
+              @contextmenu.prevent
+            >
+              <ChevronUp
+                aria-hidden="true"
+                :stroke-width="1.5"
+                :size="20"
+                :absoluteStrokeWidth="true"
+              />
+              <span class="sr-only">Shift up</span>
+            </button>
+          </div>
+        </div>
         <KeyboardExtended
           :highlighted-notes="previewNotesPlayable"
           :start-octave="1"
@@ -185,8 +215,8 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch, nextTick } from "vue";
-import { X, Music2, Headphones } from "lucide-vue-next";
+import { ref, computed, reactive, watch, nextTick, onBeforeUnmount } from "vue";
+import { X, Music2, Headphones, ChevronDown, ChevronUp } from "lucide-vue-next";
 import CustomSelect from "./CustomSelect.vue";
 import KeyboardExtended from "./KeyboardExtended.vue";
 import { Scale, Note } from "@tonaljs/tonal";
@@ -515,6 +545,16 @@ const transposeSliderMax = computed(
 const transposeSliderDisabled = computed(
   () => transposeSliderMin.value === transposeSliderMax.value
 );
+const canTransposeDown = computed(
+  () =>
+    !transposeSliderDisabled.value &&
+    currentTranspose.value > transposeSliderMin.value
+);
+const canTransposeUp = computed(
+  () =>
+    !transposeSliderDisabled.value &&
+    currentTranspose.value < transposeSliderMax.value
+);
 
 const currentTranspose = computed({
   get() {
@@ -545,6 +585,80 @@ const currentTranspose = computed({
     state.inversion = combo.inversion;
   },
 });
+
+const TIMER_HOST = typeof window !== "undefined" ? window : globalThis;
+const TRANSPOSE_HOLD_DELAY = 350;
+const TRANSPOSE_HOLD_INTERVAL = 110;
+const transposeHoldDelayId = ref(null);
+const transposeHoldIntervalId = ref(null);
+const transposeHoldPointerId = ref(null);
+let transposeHoldTarget = null;
+
+function clearTransposeHoldTimers() {
+  if (transposeHoldDelayId.value != null) {
+    TIMER_HOST.clearTimeout(transposeHoldDelayId.value);
+    transposeHoldDelayId.value = null;
+  }
+  if (transposeHoldIntervalId.value != null) {
+    TIMER_HOST.clearInterval(transposeHoldIntervalId.value);
+    transposeHoldIntervalId.value = null;
+  }
+}
+
+function stopTransposeHold(event) {
+  clearTransposeHoldTimers();
+  if (
+    transposeHoldTarget &&
+    transposeHoldPointerId.value != null &&
+    typeof transposeHoldTarget.releasePointerCapture === "function"
+  ) {
+    transposeHoldTarget.releasePointerCapture(transposeHoldPointerId.value);
+  }
+  transposeHoldPointerId.value = null;
+  transposeHoldTarget = null;
+}
+
+function applyTransposeStep(direction) {
+  if (!direction) return;
+  currentTranspose.value = currentTranspose.value + direction;
+}
+
+function startTransposeHold(direction, event) {
+  const canAdjust =
+    direction < 0 ? canTransposeDown.value : canTransposeUp.value;
+  if (!canAdjust) return;
+  stopTransposeHold();
+  transposeHoldPointerId.value = event?.pointerId ?? null;
+  transposeHoldTarget = event?.currentTarget ?? null;
+  if (
+    transposeHoldTarget &&
+    transposeHoldPointerId.value != null &&
+    typeof transposeHoldTarget.setPointerCapture === "function"
+  ) {
+    transposeHoldTarget.setPointerCapture(transposeHoldPointerId.value);
+  }
+  applyTransposeStep(direction);
+  transposeHoldDelayId.value = TIMER_HOST.setTimeout(() => {
+    transposeHoldIntervalId.value = TIMER_HOST.setInterval(() => {
+      const stillCanAdjust =
+        direction < 0 ? canTransposeDown.value : canTransposeUp.value;
+      if (!stillCanAdjust) {
+        stopTransposeHold();
+        return;
+      }
+      applyTransposeStep(direction);
+    }, TRANSPOSE_HOLD_INTERVAL);
+  }, TRANSPOSE_HOLD_DELAY);
+}
+
+onBeforeUnmount(() => {
+  stopTransposeHold();
+});
+
+watch(
+  () => model.value.mode,
+  () => stopTransposeHold()
+);
 
 function applyLegacyTransposeToState(mode, steps) {
   const offset = Number.isFinite(steps) ? Math.trunc(steps) : 0;
