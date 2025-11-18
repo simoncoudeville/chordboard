@@ -26,10 +26,20 @@
         type="button"
         @click="openGlobalKeyDialog"
       >
-        <Music2 aria-hidden="true" :stroke-width="1.5" :size="20" :absoluteStrokeWidth="true" />
+        <Music2
+          aria-hidden="true"
+          :stroke-width="1.5"
+          :size="20"
+          :absoluteStrokeWidth="true"
+        />
       </button>
       <button class="icon-button" type="button" @click="openInfoDialog">
-        <BadgeInfo aria-hidden="true" :stroke-width="1.5" :size="20" :absoluteStrokeWidth="true" />
+        <BadgeInfo
+          aria-hidden="true"
+          :stroke-width="1.5"
+          :size="20"
+          :absoluteStrokeWidth="true"
+        />
       </button>
     </div>
   </div>
@@ -574,12 +584,11 @@ const showMidiWarningButton = computed(() => {
 });
 
 const midiWarningLabel = computed(() => {
-  if (!midiSupported.value)
-    return "Your browser does not support Web MIDI.";
-  if (!midiEnabled.value) return "MIDI is not enabled.";
-  if (!hasMidiOutputs.value) return "No MIDI devices detected.";
+  if (!midiSupported.value) return "Your browser does not support Web MIDI";
+  if (!midiEnabled.value) return "MIDI is not enabled";
+  if (!hasMidiOutputs.value) return "No MIDI devices detected";
   const text = statusDisplay.value || "";
-  return text ? `${text}` : "MIDI configuration issue.";
+  return text ? `${text}` : "MIDI configuration issue";
 });
 
 // Count scale-mode pads for inline warning in GlobalKeyDialog
