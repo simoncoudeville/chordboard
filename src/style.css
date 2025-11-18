@@ -516,6 +516,7 @@ dialog:open {
   padding: calc(var(--root-dot-size) + 2px) 0;
   margin: calc(var(--root-dot-size) * -1 - 2px) 0;
   overflow: hidden;
+  pointer-events: none;
 }
 
 .keyboard-extended {
@@ -683,11 +684,49 @@ dialog:open {
   display: flex;
   flex-direction: column;
   gap: var(--space-0-5);
+  overflow: hidden;
+  padding-bottom: var(--space-1);
 }
 
 .transpose-control input[type="range"] {
   width: 100%;
 }
+
+.transpose-control-slider {
+  position: relative;
+
+  & input {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+
+    &::-webkit-slider-runnable-track {
+      height: 100%;
+      background: transparent;
+    }
+
+    &::-webkit-slider-thumb {
+      margin: 0;
+      border-width: var(--space-0-5);
+      /*border: 10px inset white;*/
+      border-style: inset;
+      border-top-color: transparent;
+      border-left-color: transparent;
+      border-right-color: transparent;
+      /*border-top-width: 15px;*/
+      /*border-width: 0 15px 0 0;*/
+      width: 0;
+      height: 0;
+      border-radius: 0;
+      margin-top: calc(var(--space-1) * 4.5);
+      /*margin-bottom: calc(var(--range-thumb-size) * -2);*/
+      /*height: 100%;*/
+      background-color: transparent;
+    }
+  }
+}
+
+input[type="range"]::-webkit-slider-thumb {}
 
 .transpose-meta {
   display: flex;

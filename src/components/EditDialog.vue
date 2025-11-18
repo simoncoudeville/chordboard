@@ -96,7 +96,6 @@
             />
           </label>
         </template>
-
         <!-- Chord type / extension -->
         <label class="edit-grid-item">
           <span class="label-text">Extension</span>
@@ -105,9 +104,6 @@
             :options="extensionOptions"
           />
         </label>
-
-        <!-- Combined root octave + inversion via slider -->
-
         <!-- Voicing pattern -->
         <label class="edit-grid-item">
           <span class="label-text">Voicing</span>
@@ -119,26 +115,27 @@
         </label>
       </div>
       <div class="dialog-content chord-preview">
+
         <label class="transpose-control">
           <span class="label-text">Transpose</span>
-
-          <input
-            class="input-range"
-            type="range"
-            :min="transposeSliderMin"
-            :max="transposeSliderMax"
-            step="1"
-            :value="currentTranspose"
-            :disabled="transposeSliderDisabled"
-            @input="currentTranspose = Number($event.target.value)"
-          />
-
+          <span class="transpose-control-slider">
+            <input
+              class="input-range"
+              type="range"
+              :min="transposeSliderMin"
+              :max="transposeSliderMax"
+              step="1"
+              :value="currentTranspose"
+              :disabled="transposeSliderDisabled"
+              @input="currentTranspose = Number($event.target.value)"
+            />
+            <KeyboardExtended
+              :highlighted-notes="previewNotesPlayable"
+              :start-octave="1"
+              :octaves="7"
+            />
+          </span>
         </label>
-        <KeyboardExtended
-          :highlighted-notes="previewNotesPlayable"
-          :start-octave="1"
-          :octaves="7"
-        />
         <div class="chord-preview-output">
           <div class="chord-preview-summary">
             <div class="chord-preview-symbol">
@@ -358,11 +355,7 @@ const editChordOptions = computed(() =>
       props.globalScaleRoot,
       props.globalScaleType
     );
-    // Add 7 to dominant (degree V) display (only if not already diminished/augmented)
-    let display = `${rootDisplay}${suffix}`;
-    if (i === 4 && suffix === "") {
-      display = `${rootDisplay}7`;
-    }
+    const display = `${rootDisplay}${suffix}`;
     return {
       degree: String(i + 1),
       roman: ROMAN_DEGREES[i] || String(i + 1),
