@@ -185,43 +185,43 @@ export function normalizeChordNameToStyle(chordName, style = "sharp") {
  */
 export function getRomanNumeralsForScale(scaleType = "major") {
   const type = String(scaleType).toLowerCase().trim();
-  
+
   // Major scale: I ii iii IV V vi vii°
   if (type === "major") {
     return ["I", "ii", "iii", "IV", "V", "vi", "vii°"];
   }
-  
+
   // Natural minor: i ii° III iv v VI VII
   if (type === "minor" || type === "natural minor") {
     return ["i", "ii°", "III", "iv", "v", "VI", "VII"];
   }
-  
+
   // Harmonic minor: i ii° III+ iv V VI vii°
   if (type === "harmonic minor") {
     return ["i", "ii°", "III+", "iv", "V", "VI", "vii°"];
   }
-  
+
   // For modal scales, derive from major pattern
   // Dorian: i ii III IV v vi° VII
   if (type === "dorian") {
     return ["i", "ii", "III", "IV", "v", "vi°", "VII"];
   }
-  
+
   // Phrygian: i II III iv v° VI vii
   if (type === "phrygian") {
     return ["i", "II", "III", "iv", "v°", "VI", "vii"];
   }
-  
+
   // Lydian: I II iii iv° V vi vii
   if (type === "lydian") {
     return ["I", "II", "iii", "iv°", "V", "vi", "vii"];
   }
-  
+
   // Mixolydian: I ii iii° IV v vi VII
   if (type === "mixolydian") {
     return ["I", "ii", "iii°", "IV", "v", "vi", "VII"];
   }
-  
+
   // Default to major if unknown
   return ["I", "ii", "iii", "IV", "V", "vi", "vii°"];
 }
@@ -233,7 +233,11 @@ export function getRomanNumeralsForScale(scaleType = "major") {
  * @param {string} scaleType - The scale type
  * @returns {string} - Formatted as "roman chordName"
  */
-export function formatChordWithRoman(chordName, degreeIndex, scaleType = "major") {
+export function formatChordWithRoman(
+  chordName,
+  degreeIndex,
+  scaleType = "major"
+) {
   const romans = getRomanNumeralsForScale(scaleType);
   const idx = Math.max(0, Math.min(6, degreeIndex % 7));
   const roman = romans[idx] || String(idx + 1);
