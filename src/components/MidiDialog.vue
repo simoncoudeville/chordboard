@@ -1,5 +1,10 @@
 <template>
-  <dialog ref="dlg" @click.self="onClose" @cancel.prevent="onClose">
+  <dialog
+    class="dialog-bottom"
+    ref="dlg"
+    @click.self="onClose"
+    @cancel.prevent="onClose"
+  >
     <form class="dialog-body" method="dialog" @submit.prevent>
       <div class="dialog-top">
         <h2 class="dialog-title">MIDI</h2>
@@ -88,12 +93,7 @@
         <template v-else-if="midiEnabled && outputs.length === 0">
           <div class="dialog-content">
             <p class="color-warning flex items-center gap-1">
-              <OctagonAlert
-                aria-hidden="true"
-                :stroke-width="1.5"
-                :size="16"
-                :absoluteStrokeWidth="true"
-              />No MIDI devices detected
+              No MIDI devices detected
             </p>
             <p class="color-meta">
               Check your MIDI device and try scanning for devices.

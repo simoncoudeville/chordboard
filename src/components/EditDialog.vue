@@ -1,5 +1,10 @@
 <template>
-  <dialog ref="dlg" @click.self="onClose" @cancel.prevent="onClose">
+  <dialog
+    class="dialog-bottom"
+    ref="dlg"
+    @click.self="onClose"
+    @cancel.prevent="onClose"
+  >
     <form class="dialog-body" method="dialog" @submit.prevent>
       <div class="dialog-top">
         <h2 class="dialog-title">Pad {{ padIndex + 1 }}</h2>
@@ -224,6 +229,8 @@ import {
   formatNoteName,
   formatChordSymbol,
   simplifyNoteName,
+  getRomanNumeralsForScale,
+  formatChordWithRoman,
 } from "../utils/enharmonic";
 import {
   DEFAULT_EXTENSION,
@@ -352,19 +359,28 @@ function qualityForDegree(index) {
 }
 
 // Populate degree selector with chord symbols: C, Dm, Em, F, G, Am, Bdim, etc.
-const ROMAN_DEGREES = ["I", "ii", "iii", "IV", "V", "vi", "vii°"];
-const ROMAN_TO_NUMERIC = ROMAN_DEGREES.reduce((acc, roman, idx) => {
-  acc[roman] = String(idx + 1);
-  return acc;
-}, {});
+// Use dynamic Roman numerals based on scale type
+const currentRomanNumerals = computed(() =>
+  getRomanNumeralsForScale(props.globalScaleType)
+);
+
+const ROMAN_TO_NUMERIC = computed(() =>
+  currentRomanNumerals.value.reduce((acc, roman, idx) => {
+    // Strip ° and + for mapping purposes
+    const cleanRoman = roman.replace(/[°+]/g, "");
+    acc[cleanRoman] = String(idx + 1);
+    acc[roman] = String(idx + 1);
+    return acc;
+  }, {})
+);
 
 function normalizeDegree(value) {
   if (value == null) return "1";
   const raw = String(value).trim();
-  if (raw in ROMAN_TO_NUMERIC) return ROMAN_TO_NUMERIC[raw];
+  const mapping = ROMAN_TO_NUMERIC.value;
+  if (raw in mapping) return mapping[raw];
   const normalizedSymbol = raw.replace(/º/g, "°");
-  if (normalizedSymbol in ROMAN_TO_NUMERIC)
-    return ROMAN_TO_NUMERIC[normalizedSymbol];
+  if (normalizedSymbol in mapping) return mapping[normalizedSymbol];
   const parsed = Number.parseInt(raw, 10);
   if (Number.isFinite(parsed) && parsed > 0) {
     return String(((parsed - 1) % 7) + 1);
@@ -388,11 +404,12 @@ const editChordOptions = computed(() =>
       props.globalScaleRoot,
       props.globalScaleType
     );
-    const romanDisplay = ROMAN_DEGREES[i] || String(i + 1);
-    let display = `${romanDisplay} ${rootDisplay}${suffix}`;
+    const chordName = `${rootDisplay}${suffix}`;
+    const romanDisplay = currentRomanNumerals.value[i] || String(i + 1);
+    const display = `${romanDisplay} ${chordName}`;
     return {
       degree: String(i + 1),
-      roman: ROMAN_DEGREES[i] || String(i + 1),
+      roman: romanDisplay,
       display,
     };
   })

@@ -1,5 +1,10 @@
 <template>
-  <dialog ref="dlg" @click.self="onClose" @cancel.prevent="onClose">
+  <dialog
+    class="dialog-fullscreen"
+    ref="dlg"
+    @click.self="onClose"
+    @cancel.prevent="onClose"
+  >
     <form class="dialog-body" method="dialog" @submit.prevent>
       <div class="dialog-top">
         <h2 class="dialog-title">Info</h2>

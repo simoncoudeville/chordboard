@@ -1,5 +1,10 @@
 <template>
-  <dialog ref="dlg" @click.self="onClose" @cancel.prevent="onClose">
+  <dialog
+    class="dialog-bottom"
+    ref="dlg"
+    @click.self="onClose"
+    @cancel.prevent="onClose"
+  >
     <form class="dialog-body" method="dialog" @submit.prevent>
       <div class="dialog-top">
         <h2 class="dialog-title">Global Scale</h2>
@@ -10,12 +15,12 @@
           aria-label="Close"
         >
           <X
-      class="dialog-close-icon"
-      aria-hidden="true"
-      :stroke-width="1.5"
-      :size="16"
-      :absoluteStrokeWidth="true"
-    />
+            class="dialog-close-icon"
+            aria-hidden="true"
+            :stroke-width="1.5"
+            :size="16"
+            :absoluteStrokeWidth="true"
+          />
           <span class="sr-only">Close</span>
         </button>
       </div>

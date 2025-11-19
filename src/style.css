@@ -310,12 +310,14 @@ dialog {
   color: inherit;
   background-color: var(--color-layer-0);
   width: 100%;
-  max-width: 100%;
+  max-width: calc(100% - var(--space-2-5) * 2);
+  /* max-width: 100%; */
   max-height: 100%;
-  margin: auto auto 0;
+  margin: auto;
+  /* margin: 0; */
   border: none;
   /* border-top: 1px solid var(--color-layer-1); */
-  border-radius: 0;
+  border-radius: var(--radius);
   opacity: 0;
   transform: translateY(calc(var(--space-2) * 1));
   transition: all 0.15s ease;
@@ -347,6 +349,19 @@ dialog:open {
       opacity: 0;
     }
   }
+}
+
+.dialog-fullscreen {
+  margin: 0;
+  min-height: 100%;
+  max-width: 100%;
+  border-radius: 0;
+}
+
+.dialog-bottom {
+  margin: auto auto 0;
+  max-width: 100%;
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 
 .dialog-body {
@@ -654,7 +669,7 @@ dialog:open {
 .edit-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: var(--space-2) var(--space-2-5);
+  gap: var(--space-2-5);
   align-items: center;
   display: flex;
   flex-wrap: wrap;

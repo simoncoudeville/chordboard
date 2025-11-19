@@ -1,30 +1,15 @@
 <template>
-  <dialog class="pad-delete-dialog" ref="dlg" @click.self="onCancel" @cancel.prevent="onCancel">
+  <dialog ref="dlg" @click.self="onCancel" @cancel.prevent="onCancel">
     <form class="dialog-body" method="dialog" @submit.prevent>
       <div class="dialog-top">
-        <h2 class="dialog-title">Reset pad</h2>
-        <button
-          type="button"
-          class="dialog-close"
-          @click="onCancel"
-          aria-label="Close"
-        >
-          <X
-            class="dialog-close-icon"
-            aria-hidden="true"
-            :stroke-width="1.5"
-            :size="16"
-            :absoluteStrokeWidth="true"
-          />
-          <span class="sr-only">Close</span>
-        </button>
+        <h2 class="dialog-title">Remove chord?</h2>
       </div>
       <div class="dialog-content">
-        <p class="color-warning">{{ props.message }}</p>
+        <p class="color-meta">{{ props.message }}</p>
       </div>
       <div class="dialog-buttons">
         <button type="button" @click="onCancel">Cancel</button>
-        <button type="button" @click="onConfirm">Reset pad</button>
+        <button type="button" @click="onConfirm">Remove chord</button>
       </div>
     </form>
   </dialog>
@@ -37,7 +22,7 @@ import { X } from "lucide-vue-next";
 const props = defineProps({
   message: {
     type: String,
-    default: "Are you sure you want to reset this pad? This will remove the chord.",
+    default: "Are you sure you want to remove this pad's chord?",
   },
 });
 
