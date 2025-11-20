@@ -60,7 +60,14 @@
       </div>
       <div class="dialog-buttons">
         <button type="button" @click="onClose">Cancel</button>
-        <button type="button" @click="onSave" :disabled="!isDirty">Save</button>
+        <button
+          class="button"
+          type="button"
+          @click="onSave"
+          :disabled="!isDirty"
+        >
+          Save
+        </button>
       </div>
     </form>
   </dialog>

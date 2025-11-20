@@ -1,5 +1,6 @@
 <template>
   <dialog
+    style="--dialog-open-duration: 0.25s"
     class="dialog-bottom"
     ref="dlg"
     @click.self="onClose"
@@ -208,6 +209,7 @@
       <div class="dialog-buttons">
         <button type="button" @click="onClose">Cancel</button>
         <button
+          class="button"
           type="button"
           @click="$emit('save', buildPadSnapshot())"
           :disabled="!isDirty"

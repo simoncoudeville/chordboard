@@ -133,7 +133,12 @@
           </div>
           <div class="dialog-buttons">
             <button type="button" @click="onClose">Close</button>
-            <button type="button" @click="onSave" :disabled="!effectiveDirty">
+            <button
+              class="button"
+              type="button"
+              @click="onSave"
+              :disabled="!effectiveDirty"
+            >
               Save
             </button>
           </div>
@@ -178,8 +183,13 @@
             </label>
           </div>
           <div class="dialog-buttons">
-            <button type="button" @click="onClose">Close</button>
-            <button type="button" @click="onSave" :disabled="!effectiveDirty">
+            <button type="button" @click="onClose">Cancel</button>
+            <button
+              class="button"
+              type="button"
+              @click="onSave"
+              :disabled="!effectiveDirty"
+            >
               Save
             </button>
           </div>
