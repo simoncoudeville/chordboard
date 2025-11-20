@@ -58,6 +58,12 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
 }
 
 html {
@@ -478,12 +484,6 @@ dialog:open {
 
 /* Prevent text selection and long-press selection on play buttons */
 .pad-play {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none; /* iOS Safari */
-  touch-action: none; /* let pointer events control gestures */
   text-box-trim: trim-both;
 
   border: none;
@@ -517,16 +517,6 @@ dialog:open {
   & span {
     text-box-trim: trim-both;
   }
-}
-
-/* Prevent long-press selection on Preview button as well */
-.preview {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none; /* iOS Safari */
-  touch-action: none; /* let pointer events control gestures */
 }
 
 .root-dot {
