@@ -1,6 +1,7 @@
 <template>
   <dialog
     class="dialog-bottom"
+    style="view-transition-name: dialog-midi"
     ref="dlg"
     @click.self="onClose"
     @cancel.prevent="onClose"
@@ -82,7 +83,7 @@
             <button
               type="button"
               class="button block large"
-              @click="$emit('request-connect')"
+              @click="enableMidiWithTransition"
             >
               Enable MIDI
             </button>
@@ -292,6 +293,16 @@ function onSave() {
   // Refresh baseline so subsequent changes re-evaluate correctly
   baseline.value.outputId = normId(outputIdProxy.value);
   baseline.value.outCh = Number(outChProxy.value) || 1;
+}
+
+function enableMidiWithTransition() {
+  if (document.startViewTransition) {
+    document.startViewTransition(() => {
+      emit("request-connect");
+    });
+  } else {
+    emit("request-connect");
+  }
 }
 
 defineExpose({ open, close, dlg });
