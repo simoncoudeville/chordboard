@@ -33,12 +33,6 @@ export default defineConfig({
             type: "image/png",
             purpose: "maskable",
           },
-          {
-            src: "icons/icon-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any",
-          },
         ],
       },
     }),
