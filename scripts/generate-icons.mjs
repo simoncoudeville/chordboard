@@ -3,7 +3,7 @@ import path from "node:path";
 import sharp from "sharp";
 
 const root = path.resolve(process.cwd());
-const srcSvg = path.join(root, "public", "icons/icon.svg");
+const srcSvg = path.join(root, "public", "favicon.svg");
 const outDir = path.join(root, "public", "icons");
 
 const sizes = [192, 512];
@@ -51,7 +51,11 @@ async function generate() {
     })
     .png({ compressionLevel: 9 })
     .toFile(maskable);
-  console.log("wrote", path.relative(root, maskable), "(with safe-area padding)");
+  console.log(
+    "wrote",
+    path.relative(root, maskable),
+    "(with safe-area padding)"
+  );
 }
 
 generate().catch((err) => {
