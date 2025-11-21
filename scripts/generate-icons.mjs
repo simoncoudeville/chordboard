@@ -33,7 +33,7 @@ async function generate() {
   // Android adaptive icons use ~66% safe zone (circle inscribed in square)
   // 20% padding on each side = 40% total margin = 60% content size
   const maskableSize = 512;
-  const contentSize = Math.round(maskableSize * 0.6); // 60% of canvas for content
+  const contentSize = Math.round(maskableSize * 0.8); // 80% of canvas for content
   const padding = Math.round((maskableSize - contentSize) / 2); // 20% on each side
 
   const maskable = path.join(outDir, "icon-512-maskable.png");

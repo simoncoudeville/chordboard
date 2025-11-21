@@ -196,6 +196,7 @@
             @pointerleave.prevent.stop="onPreviewPressEnd($event)"
             @pointercancel.prevent.stop="onPreviewPressEnd($event)"
             @contextmenu.prevent
+            aria-label="Preview chord"
           >
             <Headphones
               aria-hidden="true"

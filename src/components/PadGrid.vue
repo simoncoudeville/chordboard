@@ -7,6 +7,7 @@
         class="pad-play pad-unassigned"
         @click.prevent.stop="onEditUnassigned(idx, $event)"
         @contextmenu.prevent
+        :aria-label="`Unassigned pad ${idx + 1}, click to configure`"
       >
         <span>UNASSIGNED</span>
       </button>
@@ -21,6 +22,7 @@
         @pointerleave.prevent.stop="onPressEnd(idx, pad, $event)"
         @pointercancel.prevent.stop="onPressEnd(idx, pad, $event)"
         @contextmenu.prevent
+        :aria-label="`Pad ${idx + 1}: ${padButtonLabelHtml(pad)}`"
       >
         <span>{{ padButtonLabelHtml(pad) }}</span>
       </button>
@@ -28,7 +30,11 @@
         class="pad-buttons"
         v-if="!(pad?.mode === 'unassigned' || pad?.assigned === false)"
       >
-        <button class="pad-edit" @click="$emit('delete', idx)">
+        <button
+          class="pad-edit"
+          @click="$emit('delete', idx)"
+          :aria-label="`Delete pad ${idx + 1}`"
+        >
           <Minus
             class="pad-delete-icon"
             aria-hidden="true"
@@ -38,7 +44,11 @@
           />
           <span class="sr-only">Delete</span>
         </button>
-        <button class="pad-edit" @click="$emit('edit', idx)">
+        <button
+          class="pad-edit"
+          @click="$emit('edit', idx)"
+          :aria-label="`Edit pad ${idx + 1}`"
+        >
           <Bolt
             class="pad-edit-icon"
             aria-hidden="true"

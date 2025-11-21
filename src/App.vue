@@ -11,6 +11,7 @@
         @click="openMidiDialog"
         :disabled="!midiSupported"
         :title="!midiSupported ? 'Your browser does not support Web MIDI' : ''"
+        aria-label="MIDI settings"
       >
         <Icon
           aria-hidden="true"
@@ -24,6 +25,7 @@
         class="icon-button scale"
         type="button"
         @click="openGlobalKeyDialog"
+        aria-label="Global scale settings"
       >
         <Music2
           aria-hidden="true"
@@ -32,7 +34,12 @@
           :absoluteStrokeWidth="true"
         />
       </button>
-      <button class="icon-button" type="button" @click="openInfoDialog">
+      <button
+        class="icon-button"
+        type="button"
+        @click="openInfoDialog"
+        aria-label="App information"
+      >
         <BadgeInfo
           aria-hidden="true"
           :stroke-width="1.5"
