@@ -82,7 +82,7 @@
           <div class="dialog-content">
             <button
               type="button"
-              class="button block large"
+              class="button block primary"
               @click="enableMidiWithTransition"
             >
               Enable MIDI
@@ -103,7 +103,7 @@
           <div class="dialog-content">
             <button
               type="button"
-              class="button block large"
+              class="button primary block"
               @click="$emit('rescan')"
             >
               Scan for devices
@@ -133,9 +133,9 @@
             </label>
           </div>
           <div class="dialog-buttons">
-            <button type="button" @click="onClose">Close</button>
+            <button class="button" type="button" @click="onClose">Close</button>
             <button
-              class="button"
+              class="button primary"
               type="button"
               @click="onSave"
               :disabled="!effectiveDirty"
@@ -156,7 +156,7 @@
           <div class="dialog-content">
             <button
               type="button"
-              class="button block large"
+              class="button block primary"
               @click="$emit('rescan')"
             >
               Scan for devices
@@ -184,9 +184,11 @@
             </label>
           </div>
           <div class="dialog-buttons">
-            <button type="button" @click="onClose">Cancel</button>
+            <button class="button" type="button" @click="onClose">
+              Cancel
+            </button>
             <button
-              class="button"
+              class="button primary"
               type="button"
               @click="onSave"
               :disabled="!effectiveDirty"
@@ -201,7 +203,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { X, OctagonAlert } from "lucide-vue-next";
 import CustomSelect from "./CustomSelect.vue";
 
@@ -236,6 +238,11 @@ const baseline = ref({
   initialized: false,
 });
 
+function syncBaselineToProps() {
+  baseline.value.outputId = normId(props.midiModelOutputId);
+  baseline.value.outCh = Number(props.midiModelOutCh) || 1;
+}
+
 const outputIdProxy = computed({
   get: () => props.midiModelOutputId,
   set: (val) => emit("update:midiModelOutputId", val),
@@ -254,7 +261,7 @@ function open() {
   dlg.value?.showModal();
   // Capture baseline at open so later scans enable Save when changed
   baseline.value = {
-    outputId: props.midiModelOutputId || null,
+    outputId: normId(props.midiModelOutputId),
     outCh: Number(props.midiModelOutCh) || 1,
     initialized: true,
   };
@@ -286,6 +293,20 @@ const effectiveDirty = computed(() => {
   const parentDirty = !!props.isMidiDirty;
   return parentDirty || internalDirty.value;
 });
+
+watch(
+  () => [props.midiEnabled, props.midiModelOutputId, props.midiModelOutCh],
+  () => {
+    if (!baseline.value.initialized) return;
+    if (!props.midiEnabled) return;
+    if (!props.isMidiDirty) {
+      syncBaselineToProps();
+      return;
+    }
+    if (internalDirty.value) return;
+    syncBaselineToProps();
+  }
+);
 
 function onSave() {
   if (!effectiveDirty.value) return;

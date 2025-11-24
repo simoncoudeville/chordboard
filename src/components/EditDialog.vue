@@ -208,9 +208,9 @@
         </div>
       </div>
       <div class="dialog-buttons">
-        <button type="button" @click="onClose">Cancel</button>
+        <button class="button" type="button" @click="onClose">Cancel</button>
         <button
-          class="button"
+          class="button primary"
           type="button"
           @click="$emit('save', buildPadSnapshot())"
           :disabled="!isDirty"

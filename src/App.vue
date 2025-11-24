@@ -4,7 +4,7 @@
       :active-key-set="activeKeySet"
       :now-playing-html="nowPlayingHtml"
     />
-    <div class="midi-status-container">
+    <div class="top-buttons">
       <button
         class="icon-button midi"
         type="button"

@@ -8,8 +8,8 @@
         <p class="color-meta">{{ props.message }}</p>
       </div>
       <div class="dialog-buttons">
-        <button type="button" @click="onCancel">Cancel</button>
-        <button class="button" type="button" @click="onConfirm">
+        <button class="button" type="button" @click="onCancel">Cancel</button>
+        <button class="button primary" type="button" @click="onConfirm">
           Remove chord
         </button>
       </div>
