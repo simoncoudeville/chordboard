@@ -19,7 +19,6 @@
 
 <script setup>
 import { ref } from "vue";
-import { X } from "lucide-vue-next";
 
 const props = defineProps({
   message: {

@@ -204,7 +204,7 @@
 
 <script setup>
 import { ref, computed, watch } from "vue";
-import { X, OctagonAlert } from "lucide-vue-next";
+import { X } from "lucide-vue-next";
 import CustomSelect from "./CustomSelect.vue";
 
 const props = defineProps({

@@ -64,15 +64,7 @@
 </template>
 
 <script setup>
-import {
-  IterationCw,
-  Repeat2,
-  Repeat,
-  Bolt,
-  Undo,
-  Minus,
-  ChevronsUpDown,
-} from "lucide-vue-next";
+import { Bolt, Minus } from "lucide-vue-next";
 const props = defineProps({
   pads: { type: Array, required: true },
   permissionAllowed: { type: Boolean, default: false },

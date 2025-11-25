@@ -130,17 +130,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { WebMidi } from "webmidi";
-import {
-  Music2,
-  Cable,
-  CircleEllipsis,
-  Circle,
-  Info,
-  BadgeInfo,
-  BadgeQuestionMark,
-  Badge,
-  OctagonAlert,
-} from "lucide-vue-next";
+import { Music2, BadgeInfo, OctagonAlert } from "lucide-vue-next";
 import { Icon } from "lucide-vue-next";
 const iconStrokeWidth = 1.5;
 const iconStrokeWidthSmall = 1.25;
