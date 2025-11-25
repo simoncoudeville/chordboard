@@ -49,7 +49,6 @@
       </button>
     </div>
   </div>
-
   <PadGrid
     :pads="pads"
     :permission-allowed="permissionAllowed"
@@ -71,7 +70,6 @@
       {{ midiWarningLabel }}
     </button>
   </div>
-
   <EditDialog
     ref="editDialogRef"
     :pad-index="currentPadIndex"
@@ -86,7 +84,6 @@
     @save="saveEdit"
     @close="closeEdit"
   />
-
   <MidiDialog
     ref="midiDialogRef"
     :midi-enabled="midiEnabled"
@@ -105,7 +102,6 @@
     @refresh-permission="handleRefreshPermission"
     @request-connect="handleRequestConnect"
   />
-
   <GlobalKeyDialog
     ref="globalKeyDialogRef"
     :model-scale="globalScale"
@@ -132,10 +128,8 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { WebMidi } from "webmidi";
 import { Music2, BadgeInfo, OctagonAlert } from "lucide-vue-next";
 import { Icon } from "lucide-vue-next";
-const iconStrokeWidth = 1.5;
-const iconStrokeWidthSmall = 1.25;
 
-// Icon data for FoobarIcon (no export needed in <script setup>)
+// Icon data for custom Midi icon
 const Midi = [
   [
     "path",
@@ -170,53 +164,6 @@ const Midi = [
     {
       d: "M7.76 16.24h.01",
       key: "11ncrc",
-    },
-  ],
-  [
-    "circle",
-    {
-      cx: "12",
-      cy: "12",
-      r: "10",
-      key: "1mglay",
-    },
-  ],
-];
-
-const Midi2 = [
-  [
-    "path",
-    {
-      d: "M12 17h.01",
-      key: "p32p05",
-    },
-  ],
-  [
-    "path",
-    {
-      d: "M15.5 15.5h.01",
-      key: "14q5rk",
-    },
-  ],
-  [
-    "path",
-    {
-      d: "M17 12h.01",
-      key: "1m0b6t",
-    },
-  ],
-  [
-    "path",
-    {
-      d: "M7 12h.01",
-      key: "eqddd0",
-    },
-  ],
-  [
-    "path",
-    {
-      d: "M8.5 15.5h.01",
-      key: "pctjho",
     },
   ],
   [
