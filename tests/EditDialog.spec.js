@@ -17,8 +17,8 @@ function findSelectByLabel(wrapper, labelText) {
 }
 
 function getPreviewText(wrapper) {
-  const sym = wrapper.get(".chord-preview-symbol span").text();
-  const notes = wrapper.get(".chord-preview-notes span").text();
+  const sym = wrapper.findAll(".chord-preview-symbol span")[1].text();
+  const notes = wrapper.findAll(".chord-preview-notes span")[1].text();
   return { sym, notes };
 }
 
@@ -129,7 +129,7 @@ describe("EditDialog chord preview + save", () => {
     const wrapper = mount(EditDialog, {
       props: {
         padIndex: 0,
-        globalScale: "C",
+        globalScaleRoot: "C",
         globalScaleType: "major",
         padState: null,
         isEditDirty: true,
@@ -144,10 +144,16 @@ describe("EditDialog chord preview + save", () => {
       },
     });
 
-    await findSelectByLabel(wrapper, "Chord").setValue("5");
+    await wrapper.find(".select-chord select").setValue("5");
     await findSelectByLabel(wrapper, "Extension").setValue("7");
-    await findSelectByLabel(wrapper, "Root octave").setValue("4");
-    await findSelectByLabel(wrapper, "Inversion").setValue("2nd");
+    // Transpose up 2 times to get 2nd inversion (assuming default is root, 4th octave)
+    const upBtn = wrapper
+      .findAll("button")
+      .find((b) => b.text().includes("Shift up"));
+    await upBtn.trigger("pointerdown");
+    await upBtn.trigger("pointerup");
+    await upBtn.trigger("pointerdown");
+    await upBtn.trigger("pointerup");
     await findSelectByLabel(wrapper, "Voicing").setValue("drop2");
 
     const { sym, notes } = getPreviewText(wrapper);

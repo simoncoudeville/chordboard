@@ -14,7 +14,7 @@ export const CHORD_TYPES = Object.freeze([
 ]);
 
 export const ALLOWED_EXTENSIONS_BY_TYPE = Object.freeze({
-  major: ["none", "6", "maj7", "maj9", "add9", "7", "9", "13"],
+  major: ["none", "6", "6/9", "maj7", "maj9", "add9", "7", "9", "13"],
   minor: ["none", "6", "7", "9", "11", "13", "add9"],
   diminished: ["none", "7"],
   halfDiminished: ["none"],
@@ -164,6 +164,10 @@ function buildMajorChordSymbols(root, extension) {
       return { display: `${root}9`, tonal: `${root}9` };
     case "13":
       return { display: `${root}13`, tonal: `${root}13` };
+    case "13":
+      return { display: `${root}13`, tonal: `${root}13` };
+    case "6/9":
+      return { display: `${root}6/9`, tonal: `${root}6/9` };
     default:
       return { display: `${root}`, tonal: `${root}` };
   }
