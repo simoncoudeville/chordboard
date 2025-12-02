@@ -80,6 +80,29 @@
           Open Source under the MIT License.
         </p>
       </div>
+      <div class="dialog-content">
+        <h3>Changelog</h3>
+      </div>
+      <div class="dialog-content" v-if="latestChangelog">
+        <span class="color-meta uppercase text-sm"
+          >v{{ latestChangelog.version }} -
+          {{ formatDate(latestChangelog.date) }}</span
+        >
+        <h4>{{ latestChangelog.title }}</h4>
+      </div>
+      <div class="dialog-content" v-if="latestChangelog">
+        <p class="color-meta">{{ latestChangelog.description }}</p>
+      </div>
+      <div class="dialog-content" v-if="latestChangelog">
+        <ul
+          class="list color-meta"
+          v-if="latestChangelog.features && latestChangelog.features.length"
+        >
+          <li v-for="(feature, idx) in latestChangelog.features" :key="idx">
+            {{ feature }}
+          </li>
+        </ul>
+      </div>
     </form>
   </dialog>
 </template>
@@ -87,6 +110,7 @@
 <script setup>
 import { ref, computed } from "vue";
 import { X, BadgeCheck, Frown } from "lucide-vue-next";
+import { changelog } from "../data/changelog";
 
 const props = defineProps({
   midiSupported: { type: Boolean, default: true },
@@ -101,6 +125,20 @@ const midiSupportMessage = computed(() =>
     ? "Great! Your browser supports Web MIDI. "
     : "Unfortunately your browser does not support Web MIDI. Try Chrome on Android or on a desktop browser."
 );
+
+const latestChangelog = computed(() => changelog[0]);
+
+function formatDate(dateStr) {
+  try {
+    return new Date(dateStr).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
 
 function open() {
   dlg.value?.showModal();

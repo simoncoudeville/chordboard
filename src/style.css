@@ -93,7 +93,8 @@ svg {
 }
 
 h2,
-h3 {
+h3,
+h4 {
   text-transform: uppercase;
   font-size: 1rem;
   font-weight: var(--font-weight-strong);
@@ -109,6 +110,10 @@ a:any-link {
   display: inline-block;
   padding-right: var(--space-3);
   padding-bottom: var(--space-1);
+
+  label:has(:is(select, input):disabled) & {
+    opacity: 0.5;
+  }
 }
 
 select {
@@ -667,6 +672,54 @@ dialog:open {
   stroke: var(--color-text-meta);
 }
 
+.toggle-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.checkbox-hidden {
+  opacity: 0;
+  position: absolute;
+  z-index: -1;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.checkbox-toggle {
+  --checkbox-toggle-padding: calc(var(--space-unit) * 0.25);
+  display: inline-block;
+  width: calc(var(--space-2) * 2);
+  height: var(--space-2-5);
+  padding: var(--checkbox-toggle-padding);
+  border-radius: 9999rem;
+  /* border: 1px solid var(--color-border); */
+  background-color: var(--color-layer-1);
+  transition: all 0.1s ease;
+
+  &::after {
+    content: "";
+    display: block;
+    width: var(--space-2);
+    aspect-ratio: 1;
+    border-radius: 100%;
+    background-color: var(--color-layer-0);
+    transition: all 0.1s ease;
+  }
+
+  .checkbox-hidden:checked + & {
+    background-color: var(--color-text);
+    &::after {
+      translate: calc(100% - calc(var(--checkbox-toggle-padding) * 2));
+    }
+  }
+}
+
 .flex {
   display: flex;
 }
@@ -717,6 +770,22 @@ dialog:open {
 
 .uppercase {
   text-transform: uppercase;
+}
+
+.nocase {
+  text-transform: none;
+}
+
+.list {
+  list-style: inside;
+}
+
+.list li::marker {
+  content: "- ";
+}
+
+.fw-normal {
+  font-weight: 400;
 }
 
 .strong {

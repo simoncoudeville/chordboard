@@ -25,7 +25,7 @@
           <span class="sr-only">Close</span>
         </button>
       </div>
-      <div class="dialog-toggles">
+      <div class="dialog-toggles" v-if="globalScaleEnabled">
         <div class="toggle-buttons">
           <label class="toggle-button"
             ><input
@@ -253,6 +253,7 @@ const props = defineProps({
   globalScaleRoot: { type: String, default: "" },
   globalScaleDisplay: { type: String, default: "" },
   globalScaleType: { type: String, default: "" },
+  globalScaleEnabled: { type: Boolean, default: true },
   permissionAllowed: { type: Boolean, default: false },
   midiEnabled: { type: Boolean, default: false },
   // New: incoming saved state for this pad (or null)
@@ -1017,7 +1018,7 @@ function onClose() {
 
 function resetToDefaults() {
   // Reset mode and both mode states to defaults
-  model.value.mode = "scale";
+  model.value.mode = props.globalScaleEnabled ? "scale" : "free";
   // Use first available degree from editChordOptions
   const firstDegree =
     editChordOptions.value.length > 0 ? editChordOptions.value[0].degree : "I";
@@ -1219,7 +1220,7 @@ function buildPadSnapshot() {
 
 function applyPadState(s) {
   isApplyingPadState.value = true;
-  // Unassigned pad: reset to defaults with scale mode
+  // Unassigned pad: reset to defaults with scale mode (if enabled)
   if (
     !s ||
     typeof s !== "object" ||
@@ -1234,7 +1235,14 @@ function applyPadState(s) {
   }
 
   // Assigned pad: apply saved state
-  if (s.mode === "scale" || s.mode === "free") model.value.mode = s.mode;
+  if (s.mode === "scale" || s.mode === "free") {
+    // If global scale is disabled, force free mode even if saved as scale
+    if (!props.globalScaleEnabled && s.mode === "scale") {
+      model.value.mode = "free";
+    } else {
+      model.value.mode = s.mode;
+    }
+  }
   if (s.scale && typeof s.scale === "object") {
     if (s.scale.degree != null)
       stateScale.degree = normalizeDegree(s.scale.degree);

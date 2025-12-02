@@ -77,6 +77,7 @@
     :global-scale-root="preferredGlobalScaleRoot"
     :global-scale-display="globalScaleDisplayName"
     :global-scale-type="globalScaleType"
+    :global-scale-enabled="globalScaleEnabled"
     :permission-allowed="permissionAllowed"
     :midi-enabled="midiEnabled"
     @preview-start="onPreviewStart"
@@ -106,6 +107,7 @@
     ref="globalKeyDialogRef"
     :model-scale="globalScale"
     :model-type="globalScaleType"
+    :model-enabled="globalScaleEnabled"
     :scale-pad-count="scaleModePadCount"
     @close="onCloseGlobalKey"
     @save="saveGlobalKey"
@@ -114,6 +116,11 @@
     ref="infoDialogRef"
     :midi-supported="midiSupported"
     @close="onCloseInfo"
+  />
+  <ChangelogDialog
+    ref="changelogDialogRef"
+    @close="onCloseChangelog"
+    @dismiss="onDismissChangelog"
   />
   <PadDeleteDialog
     ref="padDeleteDialogRef"
@@ -183,6 +190,7 @@ import EditDialog from "./components/EditDialog.vue";
 import MidiDialog from "./components/MidiDialog.vue";
 import GlobalKeyDialog from "./components/GlobalKeyDialog.vue";
 import InfoDialog from "./components/InfoDialog.vue";
+import ChangelogDialog from "./components/ChangelogDialog.vue";
 import PadDeleteDialog from "./components/PadDeleteDialog.vue";
 import { useMidi } from "./composables/useMidi";
 import { Scale, Note } from "@tonaljs/tonal";
@@ -200,6 +208,7 @@ import {
   formatScaleName,
   simplifyNoteName,
 } from "./utils/enharmonic";
+import { changelog } from "./data/changelog";
 
 const {
   midiEnabled,
@@ -229,6 +238,7 @@ const editDialogRef = ref(null);
 const midiDialogRef = ref(null);
 const globalKeyDialogRef = ref(null);
 const infoDialogRef = ref(null);
+const changelogDialogRef = ref(null);
 const padDeleteDialogRef = ref(null);
 
 const currentPadIndex = ref(0);
@@ -254,6 +264,7 @@ const isMidiDirty = computed(() => {
 // Global scale state
 const globalScale = ref("C");
 const globalScaleType = ref("major");
+const globalScaleEnabled = ref(true);
 
 const preferredGlobalScaleRoot = computed(() =>
   preferredScaleRoot(globalScale.value, globalScaleType.value)
@@ -285,6 +296,8 @@ function loadGlobalScaleSettings() {
     if (obj && typeof obj === "object") {
       if (obj.scale) globalScale.value = obj.scale;
       if (obj.type) globalScaleType.value = obj.type;
+      if (typeof obj.enabled === "boolean")
+        globalScaleEnabled.value = obj.enabled;
     }
   } catch {}
 }
@@ -297,6 +310,7 @@ function saveGlobalScaleSettings() {
       JSON.stringify({
         scale: globalScale.value,
         type: globalScaleType.value,
+        enabled: globalScaleEnabled.value,
       })
     );
   } catch {}
@@ -334,6 +348,34 @@ function openInfoDialog() {
 
 function onCloseInfo() {}
 
+function onCloseChangelog() {
+  // Do nothing when closed normally (will show again next time)
+}
+
+function onDismissChangelog() {
+  // Mark as seen ONLY when explicitly dismissed
+  const latestVersion = changelog[0]?.version;
+  if (latestVersion) {
+    localStorage.setItem(CHANGELOG_KEY, latestVersion);
+  }
+}
+
+const CHANGELOG_KEY = "chordboard:changelog-seen";
+
+function checkChangelog() {
+  const latestVersion = changelog[0]?.version;
+  if (!latestVersion) return;
+
+  const seenVersion = localStorage.getItem(CHANGELOG_KEY);
+  if (seenVersion !== latestVersion) {
+    // Open dialog
+    // Use setTimeout to ensure it opens after mount and other inits
+    setTimeout(() => {
+      changelogDialogRef.value?.open?.();
+    }, 500);
+  }
+}
+
 function requestDeletePad(idx) {
   deleteConfirmIndex.value = idx;
   padDeleteDialogRef.value?.open?.();
@@ -369,11 +411,47 @@ function confirmDeletePad() {
   resetDeleteDialogState();
 }
 
-function saveGlobalKey({ scale, type }) {
+function saveGlobalKey({ scale, type, enabled }) {
+  const wasEnabled = globalScaleEnabled.value;
   const changed =
     String(scale) !== String(globalScale.value) ||
     String(type) !== String(globalScaleType.value);
-  if (changed) {
+
+  // If disabling scale mode, migrate all scale-mode pads to free mode
+  if (wasEnabled && !enabled) {
+    pads.value = pads.value.map((p) => {
+      if (p && p.mode === "scale" && p.assigned !== false) {
+        // Calculate current musical values
+        const rootPc = chordRootForPad(p);
+        const q = qualityForDegree(currentScaleIndex(p));
+        const chordType =
+          q === "m"
+            ? "minor"
+            : q === "dim"
+            ? "diminished"
+            : q === "aug"
+            ? "augmented"
+            : "major";
+
+        // Return new pad object in free mode
+        return {
+          ...p,
+          mode: "free",
+          free: {
+            root: rootPc,
+            type: chordType,
+            octave: p.scale.octave,
+            extension: p.scale.extension,
+            inversion: p.scale.inversion,
+            voicing: p.scale.voicing,
+            accidental: null,
+          },
+        };
+      }
+      return p;
+    });
+    savePads();
+  } else if (enabled && changed) {
     // Reset affected pads silently; warning is shown inline in dialog
     const hasAffected = (pads.value || []).some(
       (p) => p && p.mode === "scale" && p.assigned !== false
@@ -387,6 +465,7 @@ function saveGlobalKey({ scale, type }) {
   }
   globalScale.value = scale;
   globalScaleType.value = type;
+  globalScaleEnabled.value = enabled;
   saveGlobalScaleSettings();
 }
 
@@ -502,6 +581,7 @@ onMounted(() => {
   updatePermissionStatus();
   loadGlobalScaleSettings();
   loadPads();
+  checkChangelog();
 });
 
 onBeforeUnmount(() => {

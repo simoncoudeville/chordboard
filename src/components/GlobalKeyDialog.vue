@@ -26,9 +26,30 @@
       </div>
       <div class="dialog-content">
         <p class="color-meta">
-          Set the global scale for all pads in Scale mode.
+          With global scale enabled all pads get the option to choose only
+          chords within that scale.
         </p>
       </div>
+      <div class="dialog-content">
+        <label class="toggle-label">
+          <span class="label-text">Enable Global Scale</span>
+          <input
+            class="checkbox-hidden"
+            type="checkbox"
+            v-model="enabledLocal"
+          />
+          <span class="checkbox-toggle"> </span>
+        </label>
+      </div>
+      <!-- <div class="dialog-content">
+        <p class="color-meta" v-if="enabledLocal">
+          Global scale is enabled. Set the global scale for all pads in Scale
+          mode.
+        </p>
+        <p class="color-meta" v-else>
+          Global scale is disabled. All pads will use Free mode.
+        </p>
+      </div> -->
       <div class="dialog-content edit-grid">
         <label class="flex-grow-1">
           <span class="label-text">Root</span>
@@ -38,6 +59,7 @@
             option-value-key="value"
             option-label-key="label"
             wrapper-class="select-scale"
+            :disabled="!enabledLocal"
           />
         </label>
         <label class="flex-grow-2">
@@ -47,16 +69,25 @@
             :options="scaleTypes"
             option-value-key="value"
             option-label-key="label"
+            :disabled="!enabledLocal"
           />
         </label>
       </div>
       <div
-        v-if="isDirty && scalePadCount > 0"
+        v-if="isDirty && scalePadCount > 0 && enabledLocal"
         class="dialog-content color-warning"
       >
         Changing the global scale will reset
         {{ scalePadCount }} {{ scalePadCount === 1 ? "pad" : "pads" }}
         currently in Scale mode.
+      </div>
+      <div
+        v-if="isDirty && scalePadCount > 0 && !enabledLocal && modelEnabled"
+        class="dialog-content color-warning"
+      >
+        Disabling global scale will convert
+        {{ scalePadCount }} {{ scalePadCount === 1 ? "pad" : "pads" }}
+        to Free mode.
       </div>
       <div class="dialog-buttons">
         <button class="button" type="button" @click="onClose">Cancel</button>
@@ -81,6 +112,7 @@ import CustomSelect from "./CustomSelect.vue";
 const props = defineProps({
   modelScale: { type: String, default: "" },
   modelType: { type: String, default: "" },
+  modelEnabled: { type: Boolean, default: true },
   scalePadCount: { type: Number, default: 0 },
 });
 const emit = defineEmits(["save", "close"]);
@@ -89,6 +121,7 @@ const dlg = ref(null);
 // Local, confirm-on-save state
 const scaleLocal = ref(props.modelScale);
 const typeLocal = ref(props.modelType);
+const enabledLocal = ref(props.modelEnabled);
 
 // Scale options: display both sharp and flat names for black keys
 const scaleRoots = computed(() => [
@@ -125,13 +158,16 @@ const scaleTypes = computed(() =>
 
 const isDirty = computed(
   () =>
-    scaleLocal.value !== props.modelScale || typeLocal.value !== props.modelType
+    scaleLocal.value !== props.modelScale ||
+    typeLocal.value !== props.modelType ||
+    enabledLocal.value !== props.modelEnabled
 );
 
 function open() {
   // Seed locals from current props on each open
   scaleLocal.value = props.modelScale;
   typeLocal.value = props.modelType;
+  enabledLocal.value = props.modelEnabled;
   dlg.value?.showModal();
 }
 function close() {
@@ -143,7 +179,11 @@ function onClose() {
 }
 
 function onSave() {
-  emit("save", { scale: scaleLocal.value, type: typeLocal.value });
+  emit("save", {
+    scale: scaleLocal.value,
+    type: typeLocal.value,
+    enabled: enabledLocal.value,
+  });
   close();
 }
 
