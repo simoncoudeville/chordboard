@@ -51,7 +51,7 @@
           <div class="dialog-content">
             <button
               type="button"
-              class="button block large"
+              class="button block primary"
               @click="$emit('request-permission')"
             >
               Allow MIDI
