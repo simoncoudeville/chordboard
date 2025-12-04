@@ -24,12 +24,12 @@
           <span class="sr-only">Close</span>
         </button>
       </div>
-      <div class="dialog-content">
+      <!-- <div class="dialog-content">
         <p class="color-meta">
           With global scale enabled all pads get the option to choose only
           chords within that scale.
         </p>
-      </div>
+      </div> -->
       <div class="dialog-content">
         <label class="toggle-label">
           <span class="label-text">Enable Global Scale</span>
@@ -40,6 +40,9 @@
           />
           <span class="checkbox-toggle"> </span>
         </label>
+        <p class="toggle-label-description color-meta">
+          Turning on global scale adds a scale-based chord option to all pads
+        </p>
       </div>
       <!-- <div class="dialog-content">
         <p class="color-meta" v-if="enabledLocal">
