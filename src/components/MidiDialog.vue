@@ -133,7 +133,9 @@
             </label>
           </div>
           <div class="dialog-buttons">
-            <button class="button" type="button" @click="onClose">Close</button>
+            <button class="button" type="button" @click="onClose">
+              Cancel
+            </button>
             <button
               class="button primary"
               type="button"
