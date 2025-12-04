@@ -10,18 +10,18 @@
   --line-height: 20;
   --computed-line-height: calc(var(--line-height) / var(--font-size) * 1rem);
 
-  --space-unit: calc(8 / var(--font-size) * 1rem);
-  --space-0-5: calc(var(--space-unit) * 0.5);
-  --space-1: var(--space-unit);
-  --space-1-5: calc(var(--space-unit) * 1.5);
-  --space-2: calc(var(--space-unit) * 2);
-  --space-2-5: calc(var(--space-unit) * 2.5);
-  --space-3: calc(var(--space-unit) * 3);
-  --space-3-5: calc(var(--space-unit) * 3.5);
-  --space-4: calc(var(--space-unit) * 4);
-  --space-4-5: calc(var(--space-unit) * 4.5);
-  --space-5: calc(var(--space-unit) * 5);
-  --space-5-5: calc(var(--space-unit) * 5.5);
+  --space-unit: calc(8 / var(--font-size) * 1rem); /* 8px */
+  --space-0-5: calc(var(--space-unit) * 0.5); /* 4px */
+  --space-1: var(--space-unit); /* 8px */
+  --space-1-5: calc(var(--space-unit) * 1.5); /* 12px */
+  --space-2: calc(var(--space-unit) * 2); /* 16px */
+  --space-2-5: calc(var(--space-unit) * 2.5); /* 20px */
+  --space-3: calc(var(--space-unit) * 3); /* 24px */
+  --space-3-5: calc(var(--space-unit) * 3.5); /* 28px */
+  --space-4: calc(var(--space-unit) * 4); /* 32px */
+  --space-4-5: calc(var(--space-unit) * 4.5); /* 36px */
+  --space-5: calc(var(--space-unit) * 5); /* 40px */
+  --space-5-5: calc(var(--space-unit) * 5.5); /* 44px */
   /* Responsive pad sizing */
   --pad-min: 109px;
 
@@ -710,8 +710,8 @@ dialog:open {
 .checkbox-toggle {
   --checkbox-toggle-padding: calc(var(--space-unit) * 0.25);
   display: inline-block;
-  width: calc(var(--space-2) * 2);
-  height: var(--space-2-5);
+  width: calc(var(--space-1) * 5);
+  height: var(--space-3);
   padding: var(--checkbox-toggle-padding);
   border-radius: 9999rem;
   /* border: 1px solid var(--color-border); */
@@ -726,6 +726,7 @@ dialog:open {
     border-radius: 100%;
     background-color: var(--color-layer-0);
     transition: all 0.1s ease;
+    translate: var(--checkbox-toggle-padding) var(--checkbox-toggle-padding);
   }
 
   .checkbox-hidden:checked + & {
@@ -733,6 +734,7 @@ dialog:open {
     &::after {
       background-color: var(--color-layer-0);
       translate: calc(100% - calc(var(--checkbox-toggle-padding) * 2));
+      width: var(--space-2-5);
     }
   }
 }
