@@ -18,6 +18,7 @@
         class="pad-play"
         :class="{ 'is-pressed': pressedPads.has(idx) }"
         @pointerdown.prevent.stop="onPressStart(idx, pad, $event)"
+        @pointermove.prevent.stop="onPointerMove(idx, pad, $event)"
         @pointerup.prevent.stop="onPressEnd(idx, pad, $event)"
         @pointerleave.prevent.stop="onPressEnd(idx, pad, $event)"
         @pointercancel.prevent.stop="onPressEnd(idx, pad, $event)"
@@ -72,7 +73,7 @@ const props = defineProps({
   padButtonLabelHtml: { type: Function, required: false, default: () => "" },
 });
 
-const emit = defineEmits(["start-pad", "stop-pad", "edit"]);
+const emit = defineEmits(["start-pad", "stop-pad", "update-pad", "edit"]);
 
 // Track which pad indices are currently pressed to avoid :active delay on mobile
 import { ref } from "vue";
@@ -84,12 +85,12 @@ function onEditUnassigned(idx, e) {
   setTimeout(() => emit("edit", idx), 0);
 }
 
-function onStart(idx, pad, e) {
+function onStart(idx, pad, e, coords) {
   if (pad?.mode === "unassigned" || pad?.assigned === false) {
     emit("edit", idx);
     return;
   }
-  emit("start-pad", idx, e);
+  emit("start-pad", idx, e, coords);
 }
 function onStop(idx, pad, e) {
   if (pad?.mode === "unassigned" || pad?.assigned === false) return;
@@ -99,7 +100,43 @@ function onStop(idx, pad, e) {
 function onPressStart(idx, pad, e) {
   // mark pressed state immediately for visual feedback
   pressedPads.value.add(idx);
-  onStart(idx, pad, e);
+  const coords = getRelativeCoordinates(e, e.currentTarget);
+  onStart(idx, pad, e, coords);
+}
+
+function onPointerMove(idx, pad, e) {
+  if (!pressedPads.value.has(idx)) return;
+  const coords = getRelativeCoordinates(e, e.currentTarget);
+  emit("update-pad", idx, coords);
+}
+
+function getRelativeCoordinates(event, element) {
+  if (!element) return { x: 0.5, y: 0.5 };
+  const rect = element.getBoundingClientRect();
+
+  // Safe zones
+  const OFF_TOP = 12;
+  const OFF_RIGHT = 12;
+  const OFF_BOTTOM = 44;
+  const OFF_LEFT = 12;
+
+  const w = rect.width - OFF_LEFT - OFF_RIGHT;
+  const h = rect.height - OFF_TOP - OFF_BOTTOM;
+
+  if (w <= 0 || h <= 0) return { x: 0.5, y: 0.5 };
+
+  const rawX = event.clientX - rect.left;
+  const rawY = event.clientY - rect.top;
+
+  let x = (rawX - OFF_LEFT) / w;
+  let y = (rawY - OFF_TOP) / h;
+
+  // Clamp to 0-1
+  x = Math.max(0, Math.min(1, x));
+  y = Math.max(0, Math.min(1, y));
+
+  // Y is inverted (bottom=0, top=1)
+  return { x, y: 1 - y };
 }
 
 function onPressEnd(idx, pad, e) {

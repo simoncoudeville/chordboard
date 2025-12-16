@@ -50,6 +50,7 @@
   --color-layer-2: var(--color-gray-300);
   --color-layer-3: var(--color-gray-550);
   --color-text: var(--color-gray-950);
+  --color-text-weak: var(--color-gray-800);
   --color-text-meta: var(--color-gray-600);
   --color-border: var(--color-gray-200);
 }
@@ -90,6 +91,12 @@ html {
 svg {
   display: block;
   height: auto;
+}
+
+hr {
+  border: none;
+  height: 1px;
+  background-color: var(--color-border);
 }
 
 h2,
@@ -308,6 +315,11 @@ dialog:open {
   padding: 0 var(--space-2-5);
 }
 
+.dialog-content-divider {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-2-5);
+}
+
 .dialog-buttons {
   padding: 0 var(--space-2-5);
   display: flex;
@@ -370,13 +382,13 @@ dialog:open {
   text-box-trim: trim-both;
   border: none;
   background-color: var(--color-layer-2);
-  color: var(--color-text);
+  color: var(--color-text-weak);
   border-radius: 4px;
   text-align: left;
   text-transform: none;
   font-weight: normal;
   font-size: 1rem;
-  padding: var(--space-1);
+  padding: var(--space-1-5);
   min-height: calc(var(--space-5) * 1.5);
   display: flex;
   align-items: start;
