@@ -988,7 +988,8 @@ function onStartPad(idx, e, coords) {
 
       // Apply Humanization (Velocity)
       if (humanizeAmount > 0) {
-        const delta = (Math.random() - 0.5) * 0.2 * humanizeAmount;
+        // +/- 0.2 (approx 25 velocity steps) at max
+        const delta = (Math.random() - 0.5) * 0.4 * humanizeAmount;
         vel += delta;
       }
 
@@ -1000,8 +1001,8 @@ function onStartPad(idx, e, coords) {
 
       // Apply Humanization (Microtiming)
       if (humanizeAmount > 0) {
-        // +/- 20ms * amount
-        const timeDelta = (Math.random() - 0.5) * 40 * humanizeAmount;
+        // +/- 35ms * amount
+        const timeDelta = (Math.random() - 0.5) * 70 * humanizeAmount;
         noteTime += timeDelta;
       }
 

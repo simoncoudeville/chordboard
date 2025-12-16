@@ -204,7 +204,7 @@
         <hr />
       </div>
       <div class="dialog-content edit-grid">
-        <label class="edit-grid-item">
+        <label class="edit-grid-item flex-basis-40">
           <span class="label-text">X Axis</span>
           <CustomSelect
             v-model="stateSettings.x"
@@ -213,7 +213,7 @@
             option-label-key="label"
           />
         </label>
-        <label class="edit-grid-item">
+        <label class="edit-grid-item flex-basis-40">
           <span class="label-text">Y Axis</span>
           <CustomSelect
             v-model="stateSettings.y"
