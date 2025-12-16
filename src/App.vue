@@ -567,9 +567,32 @@ function loadPads() {
     const raw = localStorage.getItem(PADS_KEY);
     const parsed = JSON.parse(raw || "null");
     if (Array.isArray(parsed)) {
-      pads.value = pads.value.map((p, i) =>
+      // 1. Load what fits normally
+      const nextPads = pads.value.map((p, i) =>
         parsed[i] ? { ...defaultPad(), ...parsed[i] } : p
       );
+
+      // 2. Identify overflow pads that are assigned
+      const overflow = parsed
+        .slice(PAD_COUNT)
+        .filter((p) => p && p.mode !== "unassigned" && p.assigned !== false);
+
+      // 3. Try to place overflow pads into empty slots (unassigned) in the new grid
+      if (overflow.length > 0) {
+        let overflowIndex = 0;
+        for (let i = 0; i < nextPads.length; i++) {
+          if (overflowIndex >= overflow.length) break;
+          // If this slot is unassigned, fill it
+          if (
+            nextPads[i].mode === "unassigned" ||
+            nextPads[i].assigned === false
+          ) {
+            nextPads[i] = { ...defaultPad(), ...overflow[overflowIndex] };
+            overflowIndex++;
+          }
+        }
+      }
+      pads.value = nextPads;
     }
   } catch {}
 }

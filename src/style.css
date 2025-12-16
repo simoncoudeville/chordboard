@@ -298,10 +298,14 @@ dialog:open {
 }
 
 .dialog-top {
-  padding: var(--space-2-5) var(--space-2-5) 0 var(--space-2-5);
+  background-color: var(--color-layer-0);
+  padding: var(--space-2-5);
+  margin-bottom: calc(var(--space-2-5) * -1);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: sticky;
+  top: 0;
 }
 
 .dialog-close {
@@ -808,7 +812,7 @@ dialog:open {
 }
 
 .list {
-  list-style: inside;
+  padding-left: 2ch;
 }
 
 .list li::marker {
