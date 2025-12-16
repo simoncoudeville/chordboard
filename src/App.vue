@@ -56,6 +56,7 @@
     :pad-button-label-html="padButtonLabelHtml"
     @start-pad="onStartPad"
     @stop-pad="onStopPad"
+    @update-pad="onUpdatePad"
     @delete="requestDeletePad"
     @edit="openEditDialog"
   />
@@ -529,7 +530,7 @@ function clearVisualDisplay() {
   lastPlayedNotes.value = [];
 }
 
-const PAD_COUNT = 15;
+const PAD_COUNT = 12;
 const PADS_KEY = "chordboard:pads";
 
 function defaultPad() {
@@ -552,6 +553,10 @@ function defaultPad() {
       inversion: "root",
       voicing: "close",
     },
+    settings: {
+      x: "none",
+      y: "none",
+    },
   };
 }
 
@@ -561,8 +566,33 @@ function loadPads() {
   try {
     const raw = localStorage.getItem(PADS_KEY);
     const parsed = JSON.parse(raw || "null");
-    if (Array.isArray(parsed) && parsed.length === PAD_COUNT) {
-      pads.value = parsed.map((p) => ({ ...defaultPad(), ...p }));
+    if (Array.isArray(parsed)) {
+      // 1. Load what fits normally
+      const nextPads = pads.value.map((p, i) =>
+        parsed[i] ? { ...defaultPad(), ...parsed[i] } : p
+      );
+
+      // 2. Identify overflow pads that are assigned
+      const overflow = parsed
+        .slice(PAD_COUNT)
+        .filter((p) => p && p.mode !== "unassigned" && p.assigned !== false);
+
+      // 3. Try to place overflow pads into empty slots (unassigned) in the new grid
+      if (overflow.length > 0) {
+        let overflowIndex = 0;
+        for (let i = 0; i < nextPads.length; i++) {
+          if (overflowIndex >= overflow.length) break;
+          // If this slot is unassigned, fill it
+          if (
+            nextPads[i].mode === "unassigned" ||
+            nextPads[i].assigned === false
+          ) {
+            nextPads[i] = { ...defaultPad(), ...overflow[overflowIndex] };
+            overflowIndex++;
+          }
+        }
+      }
+      pads.value = nextPads;
     }
   } catch {}
 }
@@ -901,8 +931,20 @@ function padButtonLabelHtml(pad) {
 import { reactive } from "vue";
 const activePadNotes = reactive({});
 
-function onStartPad(idx) {
+const padTimers = reactive({});
+const padSchedules = reactive({});
+
+function onStartPad(idx, e, coords) {
   try {
+    // Clear any existing state for this pad
+    if (padTimers[idx]) {
+      padTimers[idx].forEach((id) => clearTimeout(id));
+      padTimers[idx] = [];
+    } else {
+      padTimers[idx] = [];
+    }
+    padSchedules[idx] = []; // Track scheduled notes { note, time }
+
     const pad = pads.value?.[idx];
     const rawNotes = padNotes(pad);
     const notes = simplifyNoteList(rawNotes);
@@ -910,39 +952,188 @@ function onStartPad(idx) {
     const sel = getSelectedChannel();
     const ch = sel?.ch;
     if (!ch) return;
+
+    // Calculate start parameters
+    let baseVelocity = 0.75;
+    let strumDuration = 0;
+    let humanizeAmount = 0;
+    let tiltAmount = 0;
+
+    const settings = pad.settings || { x: "none", y: "none" };
+
+    // Helper to process axis
+    const processAxis = (axisValue, func) => {
+      if (func === "velocity") {
+        baseVelocity = axisValue;
+      } else if (func === "strum") {
+        // Map 0-1 to 0-500ms
+        strumDuration = axisValue * 500;
+      } else if (func === "humanization") {
+        humanizeAmount = axisValue;
+      } else if (func === "velocity-tilt") {
+        // Map 0-1 to -1 to 1
+        tiltAmount = (axisValue - 0.5) * 2;
+      }
+    };
+
+    if (coords) {
+      processAxis(coords.x, settings.x);
+      processAxis(coords.y, settings.y);
+    }
+
     activePadNotes[idx] = notes.slice();
     lastPlayedNotes.value = notes.slice(); // Remember last played chord
-    try {
-      ch.playNote(notes);
-    } catch {
-      for (const n of notes) {
-        try {
-          ch.playNote(n);
-        } catch {}
+
+    const now = WebMidi.time;
+    const strumStep =
+      strumDuration > 0 && notes.length > 1 ? strumDuration / notes.length : 0;
+
+    // Look-ahead time for buffering (send notes this many ms in advance)
+    const BUFFER_MS = 50;
+
+    // Play notes with individual velocity and timing
+    notes.forEach((n, i) => {
+      let vel = baseVelocity;
+
+      // Apply Velocity Tilt
+      if (tiltAmount !== 0 && notes.length > 1) {
+        // -1 (bass loud) to 1 (treble loud)
+        // Position in chord: 0 to 1
+        const pos = i / (notes.length - 1);
+        // Bias: -1 (bass) to 1 (treble)
+        const bias = pos * 2 - 1;
+        // Effect: tilt * bias.
+        // If tilt is -1 (bass loud): bass(bias=-1) -> +1, treble(bias=1) -> -1
+        // If tilt is 1 (treble loud): bass(bias=-1) -> -1, treble(bias=1) -> +1
+        // Scale factor: 0.25 (so +/- 0.25 velocity change)
+        vel += tiltAmount * bias * 0.25;
       }
+
+      // Apply Humanization (Velocity)
+      if (humanizeAmount > 0) {
+        // +/- 0.2 (approx 25 velocity steps) at max
+        const delta = (Math.random() - 0.5) * 0.4 * humanizeAmount;
+        vel += delta;
+      }
+
+      // Clamp velocity
+      vel = Math.max(0.01, Math.min(1, vel));
+
+      // Calculate exact MIDI timestamp for this note
+      let noteTime = now + i * strumStep;
+
+      // Apply Humanization (Microtiming)
+      if (humanizeAmount > 0) {
+        // +/- 35ms * amount
+        const timeDelta = (Math.random() - 0.5) * 70 * humanizeAmount;
+        noteTime += timeDelta;
+      }
+
+      // Ensure we don't schedule in the past
+      if (noteTime < now) noteTime = now;
+
+      const schedule = () => {
+        try {
+          // Use precise MIDI time
+          ch.playNote(n, { attack: vel, time: noteTime });
+          // Track that we sent this note to the driver
+          padSchedules[idx].push({ note: n, time: noteTime });
+        } catch {}
+      };
+
+      const timeUntilNote = noteTime - WebMidi.time;
+
+      // If note is far in future, wait before scheduling
+      // This allows us to cancel the setTimeout if user releases pad early
+      if (timeUntilNote > BUFFER_MS) {
+        const wakeupTime = timeUntilNote - BUFFER_MS;
+        const timerId = setTimeout(schedule, wakeupTime);
+        padTimers[idx].push(timerId);
+      } else {
+        // Close enough, schedule immediately
+        schedule();
+      }
+    });
+
+    // Send initial continuous values if applicable
+    if (coords) {
+      sendContinuousExpression(ch, settings.x, coords.x);
+      sendContinuousExpression(ch, settings.y, coords.y);
     }
   } catch {}
 }
 
-function onStopPad(idx) {
+function onUpdatePad(idx, coords) {
   try {
-    const notes = activePadNotes[idx] || [];
-    if (!notes.length) return;
+    const pad = pads.value?.[idx];
+    if (!pad) return;
     const sel = getSelectedChannel();
     const ch = sel?.ch;
     if (!ch) return;
+
+    const settings = pad.settings || { x: "none", y: "none" };
+    sendContinuousExpression(ch, settings.x, coords.x);
+    sendContinuousExpression(ch, settings.y, coords.y);
+  } catch {}
+}
+
+function sendContinuousExpression(ch, func, value) {
+  if (func === "aftertouch") {
+    // Send channel aftertouch
     try {
-      ch.stopNote(notes);
-    } catch {
-      for (const n of notes) {
+      ch.setChannelAftertouch(value);
+    } catch {}
+  }
+}
+
+function onStopPad(idx) {
+  try {
+    // 1. Cancel any future notes that haven't been sent to MIDI driver yet
+    if (padTimers[idx]) {
+      padTimers[idx].forEach((id) => clearTimeout(id));
+      padTimers[idx] = [];
+    }
+
+    // 2. Stop notes that were already sent or played
+    // We need to stop them SAFELY.
+    // If a note was scheduled for the future (e.g. now + 100ms),
+    // sending stopNote() NOW (at now) might be ignored or cause stuck note
+    // depending on the driver/synth because NoteOff comes before NoteOn.
+    // So we must schedule the stop to happen slightly AFTER the start.
+    const scheduled = padSchedules[idx] || [];
+    const now = WebMidi.time;
+
+    // We also stop 'activePadNotes' just in case, though padSchedules covers it
+    const fallbackNotes = activePadNotes[idx] || [];
+    const sel = getSelectedChannel();
+    const ch = sel?.ch;
+
+    if (ch) {
+      // Create a set of notes we know about from schedule
+      const handledNotes = new Set();
+
+      scheduled.forEach((item) => {
+        handledNotes.add(item.note);
         try {
-          ch.stopNote(n);
+          // Schedule stop at least 20ms after start, or now, whichever is later
+          const stopTime = Math.max(now, item.time + 20);
+          ch.stopNote(item.note, { time: stopTime });
         } catch {}
-      }
+      });
+
+      // Legacy cleanup for any notes not in our schedule list (safety net)
+      fallbackNotes.forEach((n) => {
+        if (!handledNotes.has(n)) {
+          try {
+            ch.stopNote(n);
+          } catch {}
+        }
+      });
     }
   } catch {
   } finally {
     activePadNotes[idx] = [];
+    padSchedules[idx] = [];
   }
 }
 // Preview MIDI handling

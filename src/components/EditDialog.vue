@@ -61,7 +61,6 @@
         </div>
       </template>
       <div class="dialog-content edit-grid">
-        <!-- Primary chord selector: degree (scale mode) or root/type (free mode) -->
         <template v-if="model.mode === 'scale'">
           <label class="edit-grid-item">
             <span class="label-text">Chord</span>
@@ -102,8 +101,6 @@
             />
           </label>
         </template>
-
-        <!-- Chord type / extension -->
         <label class="edit-grid-item">
           <span class="label-text">Extension</span>
           <CustomSelect
@@ -111,10 +108,6 @@
             :options="extensionOptions"
           />
         </label>
-
-        <!-- Combined root octave + inversion via slider -->
-
-        <!-- Voicing pattern -->
         <label class="edit-grid-item">
           <span class="label-text">Voicing</span>
           <CustomSelect
@@ -207,6 +200,30 @@
           </button>
         </div>
       </div>
+      <div class="dialog-content">
+        <hr />
+      </div>
+      <div class="dialog-content edit-grid">
+        <label class="edit-grid-item flex-basis-40">
+          <span class="label-text">X Axis</span>
+          <CustomSelect
+            v-model="stateSettings.x"
+            :options="xOptions"
+            option-value-key="value"
+            option-label-key="label"
+          />
+        </label>
+        <label class="edit-grid-item flex-basis-40">
+          <span class="label-text">Y Axis</span>
+          <CustomSelect
+            v-model="stateSettings.y"
+            :options="yOptions"
+            option-value-key="value"
+            option-label-key="label"
+          />
+        </label>
+      </div>
+
       <div class="dialog-buttons">
         <button class="button" type="button" @click="onClose">Cancel</button>
         <button
@@ -288,6 +305,11 @@ const stateFree = reactive({
   extension: DEFAULT_EXTENSION,
   inversion: "root",
   voicing: "close",
+});
+
+const stateSettings = reactive({
+  x: "none",
+  y: "none",
 });
 
 const previousScaleExtension = ref(DEFAULT_EXTENSION);
@@ -513,6 +535,27 @@ const currentValidInversions = computed(() =>
   model.value.mode === "scale"
     ? validInversionsScale.value
     : validInversionsFree.value
+);
+
+const EXPRESSION_OPTIONS = [
+  { value: "none", label: "None" },
+  { value: "velocity", label: "Velocity" },
+  { value: "velocity-tilt", label: "Tilt" },
+  { value: "strum", label: "Strum" },
+  { value: "aftertouch", label: "Aftertouch" },
+  { value: "humanization", label: "Humanization" },
+];
+
+const xOptions = computed(() =>
+  EXPRESSION_OPTIONS.filter(
+    (o) => o.value === "none" || o.value !== stateSettings.y
+  )
+);
+
+const yOptions = computed(() =>
+  EXPRESSION_OPTIONS.filter(
+    (o) => o.value === "none" || o.value !== stateSettings.x
+  )
 );
 
 // All possible inversions for combination building
@@ -1041,6 +1084,9 @@ function resetToDefaults() {
   stateFree.inversion = "root";
   stateFree.voicing = "close";
 
+  stateSettings.x = "none";
+  stateSettings.y = "none";
+
   previousScaleExtension.value = DEFAULT_EXTENSION;
   previousFreeExtension.value = DEFAULT_EXTENSION;
 }
@@ -1215,6 +1261,10 @@ function buildPadSnapshot() {
       inversion: stateFree.inversion,
       voicing: stateFree.voicing,
     },
+    settings: {
+      x: stateSettings.x,
+      y: stateSettings.y,
+    },
   };
 }
 
@@ -1266,6 +1316,14 @@ function applyPadState(s) {
     applyLegacyTransposeToState("free", s.free.transpose);
   }
 
+  if (s.settings && typeof s.settings === "object") {
+    stateSettings.x = s.settings.x || "none";
+    stateSettings.y = s.settings.y || "none";
+  } else {
+    stateSettings.x = "none";
+    stateSettings.y = "none";
+  }
+
   previousScaleExtension.value = stateScale.extension;
   previousFreeExtension.value = stateFree.extension;
 
@@ -1300,6 +1358,10 @@ const isDirty = computed(() => {
       inversion: String(stateFree.inversion),
       voicing: String(stateFree.voicing),
     },
+    settings: {
+      x: stateSettings.x,
+      y: stateSettings.y,
+    },
   };
   const base = {
     mode: s.mode ?? "scale",
@@ -1317,6 +1379,10 @@ const isDirty = computed(() => {
       extension: normalizeExtensionValue(s?.free?.extension),
       inversion: String(s?.free?.inversion ?? "root"),
       voicing: String(s?.free?.voicing ?? "close"),
+    },
+    settings: {
+      x: s?.settings?.x ?? "none",
+      y: s?.settings?.y ?? "none",
     },
   };
   try {

@@ -72,6 +72,9 @@
         </p>
       </div>
       <div class="dialog-content">
+        <hr />
+      </div>
+      <div class="dialog-content">
         <h3 class="mb-1">Credits</h3>
         <p class="color-meta">
           Created by <a href="https://simoncoudeville.be">Simon Coudeville</a>.
@@ -81,28 +84,35 @@
         </p>
       </div>
       <div class="dialog-content">
+        <hr />
+      </div>
+      <div class="dialog-content">
         <h3>Changelog</h3>
       </div>
-      <div class="dialog-content" v-if="latestChangelog">
-        <span class="color-meta uppercase text-sm"
-          >v{{ latestChangelog.version }} -
-          {{ formatDate(latestChangelog.date) }}</span
+      <template v-for="(entry, index) in changelog" :key="index">
+        <div class="dialog-content">
+          <span class="color-meta uppercase text-sm"
+            >v{{ entry.version }} - {{ formatDate(entry.date) }}</span
+          >
+          <h4>{{ entry.title }}</h4>
+        </div>
+        <div class="dialog-content">
+          <p class="color-meta">{{ entry.description }}</p>
+        </div>
+        <div
+          class="dialog-content"
+          v-if="entry.features && entry.features.length"
         >
-        <h4>{{ latestChangelog.title }}</h4>
-      </div>
-      <div class="dialog-content" v-if="latestChangelog">
-        <p class="color-meta">{{ latestChangelog.description }}</p>
-      </div>
-      <div class="dialog-content" v-if="latestChangelog">
-        <ul
-          class="list color-meta"
-          v-if="latestChangelog.features && latestChangelog.features.length"
-        >
-          <li v-for="(feature, idx) in latestChangelog.features" :key="idx">
-            {{ feature }}
-          </li>
-        </ul>
-      </div>
+          <ul class="list color-meta">
+            <li v-for="(feature, idx) in entry.features" :key="idx">
+              {{ feature }}
+            </li>
+          </ul>
+        </div>
+        <div class="dialog-content" v-if="index < changelog.length - 1">
+          <hr />
+        </div>
+      </template>
     </form>
   </dialog>
 </template>
@@ -125,8 +135,6 @@ const midiSupportMessage = computed(() =>
     ? "Great! Your browser supports Web MIDI. "
     : "Unfortunately your browser does not support Web MIDI. Try Chrome on Android or on a desktop browser."
 );
-
-const latestChangelog = computed(() => changelog[0]);
 
 function formatDate(dateStr) {
   try {
