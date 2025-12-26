@@ -109,10 +109,18 @@
           />
         </label>
         <label class="edit-grid-item">
+          <span class="label-text">Inversion</span>
+          <CustomSelect
+            v-model="currentInversion"
+            :options="computedInversionOptions"
+            :disabled="!currentExtension"
+          />
+        </label>
+        <label class="edit-grid-item">
           <span class="label-text">Voicing</span>
           <CustomSelect
             v-model="currentVoicing"
-            :options="voicingTypeOptions"
+            :options="computedVoicingOptions"
             :disabled="isNonTertianChord || !currentExtension"
           />
         </label>
@@ -286,7 +294,7 @@ const isPreviewPressed = ref(false);
 // Mode flag only; all other selections are kept separate per mode
 const model = ref({ mode: "scale" });
 
-const ROOT_OCTAVE_OPTIONS = [2, 3, 4, 5];
+const ROOT_OCTAVE_OPTIONS = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 const DEFAULT_ROOT_OCTAVE = 4;
 
 // Independent state per mode
@@ -339,6 +347,14 @@ const currentExtension = computed({
     const normalized = normalizeExtensionValue(v);
     if (model.value.mode === "scale") stateScale.extension = normalized;
     else stateFree.extension = normalized;
+  },
+});
+const currentInversion = computed({
+  get: () =>
+    model.value.mode === "scale" ? stateScale.inversion : stateFree.inversion,
+  set: (v) => {
+    if (model.value.mode === "scale") stateScale.inversion = v;
+    else stateFree.inversion = v;
   },
 });
 const currentVoicing = computed({
@@ -537,6 +553,41 @@ const currentValidInversions = computed(() =>
     : validInversionsFree.value
 );
 
+const computedInversionOptions = computed(() => {
+  // Determine current context
+  let rootPc, chordType, ext, octave, voicing;
+
+  if (model.value.mode === "scale") {
+    rootPc = scaleChordRootPc.value;
+    chordType = scaleChordType.value;
+    ext = normalizeExtensionValue(stateScale.extension);
+    octave = stateScale.octave;
+    voicing = stateScale.voicing || "close";
+  } else {
+    rootPc = freeChordRootPc.value;
+    chordType = freeChordType.value;
+    ext = normalizeExtensionValue(stateFree.extension);
+    octave = stateFree.octave;
+    voicing = stateFree.voicing || "close";
+  }
+
+  const { pcs } = getChordPitchClasses(rootPc, chordType, ext);
+  const availableInv = currentValidInversions.value; // e.g. ["root", "1st"]
+
+  return availableInv.map((inv) => {
+    // Check if this inversion is valid for current state
+    const notes = computeMidiNotes(pcs, octave, inv, voicing);
+    const min = Math.min(...notes);
+    const max = Math.max(...notes);
+    const disabled = min < 24 || max > 107;
+    return {
+      value: inv,
+      label: inv,
+      disabled,
+    };
+  });
+});
+
 const EXPRESSION_OPTIONS = [
   { value: "none", label: "None" },
   { value: "velocity", label: "Velocity" },
@@ -560,7 +611,42 @@ const yOptions = computed(() =>
 
 // All possible inversions for combination building
 const editInversions = ["root", "1st", "2nd", "3rd", "4th", "5th", "6th"];
-const voicingTypeOptions = ["close", "open", "drop2", "drop3", "spread"];
+const VOICING_Types = ["close", "open", "drop2", "drop3", "spread"];
+
+const computedVoicingOptions = computed(() => {
+  // Determine current context to check validity
+  let rootPc, chordType, ext, octave, inversion;
+
+  if (model.value.mode === "scale") {
+    rootPc = scaleChordRootPc.value;
+    chordType = scaleChordType.value;
+    ext = normalizeExtensionValue(stateScale.extension);
+    octave = stateScale.octave;
+    inversion = stateScale.inversion;
+  } else {
+    rootPc = freeChordRootPc.value;
+    chordType = freeChordType.value;
+    ext = normalizeExtensionValue(stateFree.extension);
+    octave = stateFree.octave;
+    inversion = stateFree.inversion;
+  }
+
+  const { pcs } = getChordPitchClasses(rootPc, chordType, ext);
+
+  return VOICING_Types.map((v) => {
+    // Check if this voicing is valid for current state
+    const notes = computeMidiNotes(pcs, octave, inversion, v);
+    const min = Math.min(...notes);
+    const max = Math.max(...notes);
+    const disabled = min < 24 || max > 107;
+    return {
+      value: v,
+      label: v,
+      disabled,
+    };
+  });
+});
+
 const isNonTertianChord = computed(() => {
   const baseType =
     model.value.mode === "scale" ? scaleChordType.value : freeChordType.value;
@@ -570,19 +656,56 @@ const isNonTertianChord = computed(() => {
 function buildTransposeMeta(mode) {
   const inversions =
     mode === "scale" ? validInversionsScale.value : validInversionsFree.value;
+
+  // Determine current chord details to check MIDI validity
+  // We can't use previewChordData directly because it's bound to current selection,
+  // but we are building meta for the current *mode*.
+  let rootPc = "C";
+  let chordType = "major";
+  let ext = "none";
+  let voicing = "close";
+
+  if (mode === "scale") {
+    rootPc = scaleChordRootPc.value;
+    chordType = scaleChordType.value;
+    ext = normalizeExtensionValue(stateScale.extension);
+    voicing = stateScale.voicing || "close";
+  } else {
+    rootPc = freeChordRootPc.value;
+    chordType = freeChordType.value;
+    ext = normalizeExtensionValue(stateFree.extension);
+    voicing = stateFree.voicing || "close";
+  }
+
+  const { pcs } = getChordPitchClasses(rootPc, chordType, ext);
+
   const combos = [];
   for (const oct of ROOT_OCTAVE_OPTIONS) {
     for (const inv of inversions) {
-      combos.push({ octave: oct, inversion: inv });
+      // Check if this combination yields valid MIDI notes
+      // Visible keyboard range is C1 (24) to B7 (107) based on start-octave=1 and octaves=7
+      const notes = computeMidiNotes(pcs, oct, inv, voicing);
+      const min = Math.min(...notes);
+      const max = Math.max(...notes);
+      if (min >= 24 && max <= 107) {
+        combos.push({ octave: oct, inversion: inv });
+      }
     }
   }
+
+  // Fallback if no valid combos found (e.g. extreme edge case)
   if (!combos.length) {
     combos.push({ octave: DEFAULT_ROOT_OCTAVE, inversion: "root" });
   }
+
   let defaultIndex = combos.findIndex(
     (c) => c.octave === DEFAULT_ROOT_OCTAVE && c.inversion === "root"
   );
-  if (defaultIndex === -1) defaultIndex = 0;
+  // If exact default isn't valid, pick middle
+  if (defaultIndex === -1) {
+    defaultIndex = Math.floor(combos.length / 2);
+  }
+
   return { combos, defaultIndex };
 }
 
@@ -625,7 +748,24 @@ const currentTranspose = computed({
     const idx = combos.findIndex(
       (c) => c.octave === state.octave && c.inversion === state.inversion
     );
-    const activeIndex = idx === -1 ? defaultIndex : idx;
+
+    // If current state is not found (invalid), find the closest one to avoid jumping
+    if (idx === -1) {
+      let bestIdx = defaultIndex;
+      let minDiff = Infinity;
+      // Simple heuristic: compare octave difference first
+      for (let i = 0; i < combos.length; i++) {
+        const c = combos[i];
+        const diff = Math.abs(c.octave - state.octave);
+        if (diff < minDiff) {
+          minDiff = diff;
+          bestIdx = i;
+        }
+      }
+      return bestIdx - defaultIndex;
+    }
+
+    const activeIndex = idx;
     return activeIndex - defaultIndex;
   },
   set(raw) {
@@ -990,20 +1130,26 @@ const previewChordData = computed(() => {
   };
 });
 
+function computeMidiNotes(pcs, octave, inversion, voicing) {
+  const pitchClasses = pcs && pcs.length ? pcs : ["C"];
+  const baseOctave = Number(octave);
+  const base = pcsToAscending(pitchClasses, baseOctave);
+  const afterInv = applyInversion(base, inversion || "root");
+  const afterVoicing = applyVoicing(afterInv, voicing || "close");
+  // Return actual MIDI numbers
+  return afterVoicing.map((n) => Note.midi(n) ?? -1);
+}
+
 const previewNotesAsc = computed(() => {
   const pcs = previewChordData.value.pcs;
-  const pitchClasses = pcs && pcs.length ? pcs : [chordRootPc.value];
-  const baseOctave =
-    model.value.mode === "scale" ? stateScale.octave : stateFree.octave;
-  const base = pcsToAscending(pitchClasses, baseOctave);
-  const afterInv = applyInversion(
-    base,
-    (model.value.mode === "scale"
-      ? stateScale.inversion
-      : stateFree.inversion) || "root"
+  const noteList = computeMidiNotes(
+    pcs,
+    model.value.mode === "scale" ? stateScale.octave : stateFree.octave,
+    model.value.mode === "scale" ? stateScale.inversion : stateFree.inversion,
+    currentVoicing.value
   );
-  const afterVoicing = applyVoicing(afterInv, currentVoicing.value || "close");
-  return sortByMidi(afterVoicing);
+  // Convert back to note names for preview logic
+  return noteList.map((m) => Note.fromMidi(m));
 });
 
 const previewNotesPlayable = computed(() =>
@@ -1197,6 +1343,55 @@ watch(
   }
 );
 
+// Auto-correct state if parameters change such that current notes become invalid
+watch(
+  () => [
+    currentVoicing.value,
+    currentExtension.value,
+    stateScale.degree,
+    stateFree.root,
+    stateFree.type,
+  ],
+  () => {
+    if (isApplyingPadState.value) return;
+    validateAndCorrectState();
+  },
+  { flush: "post" } // Run after other updates have settled
+);
+
+function validateAndCorrectState() {
+  // We verify against currentTransposeMeta, which only contains valid combos
+  const meta = currentTransposeMeta.value;
+  const combos = meta.combos;
+  if (!combos.length) return;
+
+  const state = model.value.mode === "scale" ? stateScale : stateFree;
+
+  // Check if current state is valid (present in combos)
+  const isValid = combos.some(
+    (c) => c.octave === state.octave && c.inversion === state.inversion
+  );
+
+  if (!isValid) {
+    // Find closest valid combo
+    let bestCombo = combos[0];
+    let minDiff = Infinity;
+
+    for (const c of combos) {
+      // Prioritize preserving octave proximity
+      const diff = Math.abs(c.octave - state.octave);
+      if (diff < minDiff) {
+        minDiff = diff;
+        bestCombo = c;
+      }
+    }
+
+    // Apply correction
+    state.octave = bestCombo.octave;
+    state.inversion = bestCombo.inversion;
+  }
+}
+
 // When free-mode root or type changes, reset defaults
 watch(
   () => [stateFree.root, stateFree.type],
@@ -1219,9 +1414,9 @@ watch(
       previousFreeExtension.value = stateFree.extension;
       stateFree.extension = normalizeExtensionValue(nextExtension);
     }
-    stateFree.inversion = "root";
+    // stateFree.inversion = "root"; // Removed aggressive reset to rely on auto-correction logic if desirable
     stateFree.voicing = "close";
-    stateFree.octave = DEFAULT_ROOT_OCTAVE;
+    // stateFree.octave = DEFAULT_ROOT_OCTAVE; // Removed aggressive reset
   }
 );
 
@@ -1329,6 +1524,7 @@ function applyPadState(s) {
 
   nextTick(() => {
     isApplyingPadState.value = false;
+    validateAndCorrectState();
   });
 }
 
