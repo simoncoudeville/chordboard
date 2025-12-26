@@ -1,5 +1,18 @@
 export const changelog = [
   {
+    version: "1.2.1",
+    date: "2025-12-26",
+    title: "Smarter Transpose & Ranges",
+    description:
+      "Refined editing experience prevents chords from disappearing off-screen. Transpose controls now strictly enforce the visible keyboard limits (C1-B7), and options that wouldn't fit are automatically disabled.",
+    features: [
+      "Extended Transpose Range: Chords can now be transposed across the full visible keyboard (C1-B7), with strict limits to ensure visibility.",
+      "Expanded Octave Support: Internal handling for wider octaves to support deep bass and high treble voicings.",
+      "Smart Controls: Voicing and Inversion dropdowns now disable options that would push notes off-key.",
+      "Auto-Correction: Chords gently slide to the nearest valid octave if you change parameters that would break the range limits, preventing big jumps.",
+    ],
+  },
+  {
     version: "1.2.0",
     date: "2025-12-16",
     title: "X/Y Axis Expression",

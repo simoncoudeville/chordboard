@@ -12,6 +12,7 @@
           v-for="opt in normalizedOptions"
           :key="String(opt.value)"
           :value="opt.value"
+          :disabled="opt.disabled"
         >
           {{ opt.label }}
         </option>
@@ -46,9 +47,13 @@ const normalizedOptions = computed(() => {
   if (!Array.isArray(props.options)) return [];
   return props.options.map((o) => {
     if (o && typeof o === "object") {
-      return { value: o[props.optionValueKey], label: o[props.optionLabelKey] };
+      return {
+        value: o[props.optionValueKey],
+        label: o[props.optionLabelKey],
+        disabled: !!o.disabled,
+      };
     }
-    return { value: o, label: o };
+    return { value: o, label: o, disabled: false };
   });
 });
 
